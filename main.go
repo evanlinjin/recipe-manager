@@ -1,6 +1,10 @@
 package main
 
-import "net/http"
+import (
+	"log"
+	"net/http"
+	"os"
+)
 
 func main() {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -8,5 +12,14 @@ func main() {
 		w.WriteHeader(http.StatusOK)
 		return
 	})
-	http.ListenAndServe(":8080", nil)
+	http.ListenAndServe(GetPort(), nil)
+}
+
+// GetPort returns the port number.
+func GetPort() string {
+	port := os.Getenv("PORT")
+	if port == "" {
+		log.Fatal("$PORT must be set")
+	}
+	return ":" + port
 }

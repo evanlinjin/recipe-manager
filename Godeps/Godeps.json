@@ -2,5 +2,8 @@
 	"ImportPath": "github.com/evanlinjin/gooseberry-recipe-manager-heroku",
 	"GoVersion": "go1.8",
 	"GodepVersion": "v79",
+	"Packages": [
+		"./..."
+	],
 	"Deps": []
 }
