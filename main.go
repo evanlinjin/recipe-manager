@@ -8,4 +8,5 @@ func main() {
 		w.WriteHeader(http.StatusOK)
 		return
 	})
+	http.ListenAndServe(":8080", nil)
 }
