@@ -1,7 +1,0 @@
-!StageState
-directories: !!set {bin: null}
-files: !!set {bin/gooseberry-recipe-manager-heroku: null}
-project_options: {}
-properties:
-  filesets: {}
-  stage: ['*']

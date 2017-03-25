@@ -8,15 +8,16 @@ grade: stable # must be 'stable' to release into candidate/stable channels
 confinement: strict # use 'strict' once you have the right plugs and slots
 
 apps:
-    recipe-manager:
+    server:
         command: ./bin/recipe-manager
         daemon: simple
         plugs:
             - network
             - network-bind
+            - home
 
 parts:
-  recipe-manager:
+  server:
     plugin: go
     source: . #https://github.com/evanlinjin/gooseberry-recipe-manager-heroku.git
     prime:

@@ -1,7 +1,0 @@
-!PrimeState
-dependency_paths: !!set {}
-directories: !!set {bin: null}
-files: !!set {bin/gooseberry-recipe-manager-heroku: null}
-project_options: {}
-properties:
-  prime: [bin/gooseberry-recipe-manager-heroku]

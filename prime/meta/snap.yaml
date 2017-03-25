@@ -1,10 +1,11 @@
 apps:
-  recipe-manager:
-    command: command-recipe-manager.wrapper
+  server:
+    command: command-server.wrapper
     daemon: simple
     plugs:
     - network
     - network-bind
+    - home
 architectures:
 - amd64
 confinement: strict
