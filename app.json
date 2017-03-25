@@ -6,7 +6,7 @@
     "food",
     "manager"
   ],
-  "image": "heroku/go:1.6",
+  "image": "heroku/go:1.8",
   "mount_dir": "src/github.com/evanlinjin/gooseberry-recipe-manager-heroku",
   "website": "http://github.com/evanlinjin/gooseberry-recipe-manager-heroku",
   "repository": "http://github.com/evanlinjin/gooseberry-recipe-manager-heroku"
