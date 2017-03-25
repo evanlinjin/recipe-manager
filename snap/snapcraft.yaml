@@ -9,7 +9,7 @@ confinement: strict # use 'strict' once you have the right plugs and slots
 
 apps:
     recipe-manager:
-        command: ./bin/gooseberry-recipe-manager-heroku
+        command: ./bin/recipe-manager
         daemon: simple
         plugs:
             - network
@@ -20,4 +20,4 @@ parts:
     plugin: go
     source: . #https://github.com/evanlinjin/gooseberry-recipe-manager-heroku.git
     prime:
-        - bin/gooseberry-recipe-manager-heroku
+        - bin/recipe-manager
