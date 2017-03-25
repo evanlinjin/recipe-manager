@@ -1,0 +1,17 @@
+apps:
+  recipe-manager:
+    command: command-recipe-manager.wrapper
+    daemon: simple
+    plugs:
+    - network
+    - network-bind
+architectures:
+- amd64
+confinement: strict
+description: 'Manages recipes.
+
+  '
+grade: stable
+name: recipe-manager
+summary: Manages your recipes.
+version: '0.1'

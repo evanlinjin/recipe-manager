@@ -12,7 +12,8 @@ func main() {
 		w.WriteHeader(http.StatusOK)
 		return
 	})
-	http.ListenAndServe(GetPort(), nil)
+	// http.ListenAndServe(GetPort(), nil)
+	http.ListenAndServe(":8080", nil)
 }
 
 // GetPort returns the port number.
