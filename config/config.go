@@ -81,6 +81,7 @@ func GetNetworkConfig() (*NetworkConfig, error) {
 }
 
 func getRoot() string {
+	fmt.Println("Accessing possibly unallowed teritory...")
 	path := "/home/"
 	if _, e := os.Stat("/home/ubuntu/"); os.IsNotExist(e) {
 		path += os.Getenv("USER")
