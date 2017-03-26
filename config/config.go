@@ -13,8 +13,8 @@ const (
 )
 
 const (
-	DefaultDomain      = "localhost"
-	DefaultPort        = "8080"
+	DefaultDomain      = "recipemanager.io"
+	DefaultPort        = "443"
 	DefaultMongo       = "mongodb://127.0.0.1:32017"
 	DefaultSSLCertPath = "/etc/letsencrypt/live/recipemanager.io/fullchain.pem"
 	DefaultSSLKeyPath  = "/etc/letsencrypt/live/recipemanager.io/privkey.pem"
@@ -81,8 +81,11 @@ func GetNetworkConfig() (*NetworkConfig, error) {
 }
 
 func getRoot() string {
-	path := os.Getenv("HOME") + "/recipe-manager/"
-	fmt.Println(path)
+	path := "/home/ubuntu/recipe-manager/"
+	if _, e := os.Stat("/home/ubuntu/"); os.IsNotExist(e) {
+		path = "/home/ubuntu/" + os.Getenv("USER") + "/recipe-manager/"
+	}
+	fmt.Println("Configuration file is located at:", path)
 	os.MkdirAll(path, os.ModePerm)
 	return path
 }
