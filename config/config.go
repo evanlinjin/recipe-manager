@@ -14,7 +14,7 @@ const (
 
 const (
 	//DefaultDomain      = "recipemanager.io"
-	DefaultPort        = "6081"
+	DefaultPort        = "8081"
 	DefaultMongo       = "mongodb://127.0.0.1:32017"
 	//DefaultSSLCertPath = "/etc/letsencrypt/live/recipemanager.io/fullchain.pem"
 	//DefaultSSLKeyPath  = "/etc/letsencrypt/live/recipemanager.io/privkey.pem"
