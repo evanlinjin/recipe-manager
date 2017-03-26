@@ -16,8 +16,8 @@ const (
 	DefaultDomain      = "localhost"
 	DefaultPort        = "8080"
 	DefaultMongo       = "mongodb://127.0.0.1:32017"
-	DefaultSSLCertPath = "cert.pem"
-	DefaultSSLKeyPath  = "key.pem"
+	DefaultSSLCertPath = "/home/ubuntu/ssl/0000_csr-certbot.pem"
+	DefaultSSLKeyPath  = "/home/ubuntu/ssl/0000_key-certbot.pem"
 	TempSSLCertPath    = "temp_cert.pem"
 	TempSSLKeyPath     = "temp_key.pem"
 )
