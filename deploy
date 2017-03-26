@@ -1,17 +1,29 @@
 #!/bin/bash
 
+# Pre-clean.
 rm *.snap
 snapcraft clean
 
+# Commit changes to git.
 git add *
 git commit -m "Deployment"
 git push
 
+# Make snap package.
 snapcraft
+
+# Upload to store.
 snapcraft push *.snap > push.txt
+
+# Readify Package.
 cat push.txt > push2.txt
 grep 'Revision' push2.txt > push.txt
 grep -o '[0-9]' push.txt > push2.txt
 $(echo snapcraft release recipe-manager `tr -d "\n\r" < push2.txt` stable)
+
+# Post-clean.
 rm push.txt push2.txt
 snapcraft clean
+
+# Install snap locally.
+snap install recipe-manager
