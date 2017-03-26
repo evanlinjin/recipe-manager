@@ -2,13 +2,11 @@ package config
 
 import (
 	"os"
-	//"github.com/kabukky/httpscerts"
-	//"log"
-	//"fmt"
 	"encoding/json"
 	"fmt"
 	"github.com/kabukky/httpscerts"
 	"io/ioutil"
+	"log"
 )
 
 const (
@@ -80,6 +78,7 @@ func GetNetworkConfig() (*NetworkConfig, error) {
 
 func getRoot() string {
 	path := os.Getenv("HOME") + "/recipe-manager/"
+	log.Println(path)
 	os.MkdirAll(path, os.ModePerm)
 	return path
 }

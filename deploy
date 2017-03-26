@@ -27,3 +27,10 @@ snapcraft clean
 
 # Install snap locally.
 snap install recipe-manager
+snap refresh
+
+# Configure snap locally.
+sudo nano /root/snap/recipe-manager/current/recipe-manager/network_config.json
+
+sudo systemctl restart snap.recipe-manager.server.service
+sudo systemctl status snap.recipe-manager.server.service

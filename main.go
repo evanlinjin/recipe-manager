@@ -4,10 +4,8 @@ import (
 	"log"
 	"net/http"
 	"os"
-	//"strconv"
 	"time"
 
-	//mgo "gopkg.in/mgo.v2"
 	"github.com/evanlinjin/recipe-manager/config"
 )
 
