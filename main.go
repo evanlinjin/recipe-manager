@@ -37,7 +37,7 @@ func main() {
 
 // MakeHandler makes an http handler.
 func MakeHander(c *config.NetworkConfig) func(http.ResponseWriter, *http.Request) {
-	return func(w http.ResponseWriter, r *http.Response) {
+	return func(w http.ResponseWriter, r *http.Request) {
 		// Redirect HTTP.
 		if r.TLS == nil {
 			http.Redirect(w, r, "https://"+c.Domain, http.StatusMovedPermanently)
