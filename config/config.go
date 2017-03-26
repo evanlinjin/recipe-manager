@@ -88,7 +88,6 @@ func getRoot() string {
 		path += "ubuntu"
 	}
 	path += "/recipe-manager/"
-	
 	fmt.Println("Configuration file is located at:", path)
 	os.MkdirAll(path, os.ModePerm)
 	return path
