@@ -78,7 +78,7 @@ func GetNetworkConfig() (*NetworkConfig, error) {
 
 func getRoot() string {
 	path := os.Getenv("HOME") + "/recipe-manager/"
-	log.Println(path)
+	fmt.Println(path)
 	os.MkdirAll(path, os.ModePerm)
 	return path
 }
