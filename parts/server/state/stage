@@ -1,7 +1,0 @@
-!StageState
-directories: !!set {bin: null}
-files: !!set {bin/recipe-manager: null}
-project_options: {}
-properties:
-  filesets: {}
-  stage: ['*']
