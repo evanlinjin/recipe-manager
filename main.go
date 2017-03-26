@@ -26,9 +26,9 @@ func main() {
 	http.HandleFunc("/", MakeHander(c))
 
 	// Listen and serve.
-	log.Printf("Listening and serving on %s:%s ...", c.Domain, c.Port)
-	e = http.ListenAndServeTLS(":"+c.Port, c.SSLCertPath, c.SSLKeyPath, nil)
-	if e != nil {
+	//log.Printf("Listening and serving on %s:%s ...", c.Domain, c.Port)
+	//e = http.ListenAndServeTLS(":"+c.Port, c.SSLCertPath, c.SSLKeyPath, nil)
+	if e = http.ListenAndServe(":"+c.Port, nil); e != nil {
 		log.Fatal(e)
 	}
 }
@@ -37,10 +37,10 @@ func main() {
 func MakeHander(c *config.NetworkConfig) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Redirect HTTP.
-		if r.TLS == nil {
-			http.Redirect(w, r, "https://"+c.Domain, http.StatusMovedPermanently)
-			return
-		}
+		//if r.TLS == nil {
+		//	http.Redirect(w, r, "https://"+c.Domain, http.StatusMovedPermanently)
+		//	return
+		//}
 
 		w.Write([]byte("Hello World!"))
 		w.WriteHeader(http.StatusOK)

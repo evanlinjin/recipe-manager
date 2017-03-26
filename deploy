@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Pre-clean.
-rm *.snap
+rm *.snap *.pem
 snapcraft clean
 
 # Commit changes to git.
