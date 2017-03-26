@@ -36,7 +36,7 @@ func main() {
 }
 
 // MakeHandler makes an http handler.
-func MakeHander(c *config.NetworkConfig) func(w http.ResponseWriter, r *http.Request) {
+func MakeHander(c *config.NetworkConfig) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Response) {
 		// Redirect HTTP.
 		if r.TLS == nil {
