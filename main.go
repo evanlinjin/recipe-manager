@@ -4,10 +4,10 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"strconv"
+	//"strconv"
 	"time"
 
-	mgo "gopkg.in/mgo.v2"
+	//mgo "gopkg.in/mgo.v2"
 	"github.com/evanlinjin/recipe-manager/config"
 )
 
@@ -19,15 +19,34 @@ const (
 )
 
 func main() {
-	http.HandleFunc("/", handler)
+	// Get configuration.
 	c, e := config.GetNetworkConfig()
 	if e != nil {
 		log.Fatal(e)
 	}
-	log.Printf("Listening on %s:%s ...", c.Domain, c.Port)
+
+	http.HandleFunc("/", MakeHander(c))
+
+	// Listen and serve.
+	log.Printf("Listening and serving on %s:%s ...", c.Domain, c.Port)
 	e = http.ListenAndServeTLS(":"+c.Port, c.SSLCertPath, c.SSLKeyPath, nil)
 	if e != nil {
 		log.Fatal(e)
+	}
+}
+
+// MakeHandler makes an http handler.
+func MakeHander(c *config.NetworkConfig) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Response) {
+		// Redirect HTTP.
+		if r.TLS == nil {
+			http.Redirect(w, r, "https://"+c.Domain, http.StatusMovedPermanently)
+			return
+		}
+
+		w.Write([]byte("Hello World!"))
+		w.WriteHeader(http.StatusOK)
+		return
 	}
 }
 

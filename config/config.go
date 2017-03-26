@@ -6,9 +6,9 @@ import (
 	//"log"
 	//"fmt"
 	"encoding/json"
-	"io/ioutil"
-	"github.com/kabukky/httpscerts"
 	"fmt"
+	"github.com/kabukky/httpscerts"
+	"io/ioutil"
 )
 
 const (
@@ -16,21 +16,21 @@ const (
 )
 
 const (
-	DefaultDomain = "localhost"
-	DefaultPort = "8080"
-	DefaultMongo = "mongodb://127.0.0.1:32017"
+	DefaultDomain      = "localhost"
+	DefaultPort        = "8080"
+	DefaultMongo       = "mongodb://127.0.0.1:32017"
 	DefaultSSLCertPath = "cert.pem"
-	DefaultSSLKeyPath = "key.pem"
-	TempSSLCertPath = "temp_cert.pem"
-	TempSSLKeyPath = "temp_key.pem"
+	DefaultSSLKeyPath  = "key.pem"
+	TempSSLCertPath    = "temp_cert.pem"
+	TempSSLKeyPath     = "temp_key.pem"
 )
 
 type NetworkConfig struct {
-	Domain		string	`json:"domain"`
-	Port		string	`json:"port"`
-	Mongo		string	`json:"mongo"`
-	SSLCertPath	string	`json:"ssl_cert_path"`
-	SSLKeyPath	string	`json:"ssl_key_path"`
+	Domain      string `json:"domain"`
+	Port        string `json:"port"`
+	Mongo       string `json:"mongo"`
+	SSLCertPath string `json:"ssl_cert_path"`
+	SSLKeyPath  string `json:"ssl_key_path"`
 }
 
 func GetNetworkConfig() (*NetworkConfig, error) {
@@ -40,11 +40,11 @@ func GetNetworkConfig() (*NetworkConfig, error) {
 	// Create network config file with default values if not exist.
 	if _, e := ioutil.ReadFile(networkConfigRoot); e != nil {
 		c := NetworkConfig{
-			Domain:		DefaultDomain,
-			Port:		DefaultPort,
-			Mongo:		DefaultMongo,
-			SSLCertPath:	DefaultSSLCertPath,
-			SSLKeyPath:	DefaultSSLKeyPath,
+			Domain:      DefaultDomain,
+			Port:        DefaultPort,
+			Mongo:       DefaultMongo,
+			SSLCertPath: DefaultSSLCertPath,
+			SSLKeyPath:  DefaultSSLKeyPath,
 		}
 		data, _ := json.MarshalIndent(c, "", "\t")
 		if e := ioutil.WriteFile(networkConfigRoot, data, os.ModePerm); e != nil {
