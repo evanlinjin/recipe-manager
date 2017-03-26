@@ -1,5 +1,6 @@
 #!/bin/bash
 
+rm *.snap
 snapcraft clean
 snapcraft
 snapcraft push *.snap > push.txt
