@@ -81,10 +81,14 @@ func GetNetworkConfig() (*NetworkConfig, error) {
 }
 
 func getRoot() string {
-	path := "/home/ubuntu/recipe-manager/"
+	path := "/home/"
 	if _, e := os.Stat("/home/ubuntu/"); os.IsNotExist(e) {
-		path = "/home/ubuntu/" + os.Getenv("USER") + "/recipe-manager/"
+		path += os.Getenv("USER")
+	} else {
+		path += "ubuntu"
 	}
+	path += "/recipe-manager/"
+	
 	fmt.Println("Configuration file is located at:", path)
 	os.MkdirAll(path, os.ModePerm)
 	return path
