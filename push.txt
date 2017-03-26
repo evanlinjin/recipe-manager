@@ -1,2 +1,0 @@
-Pushing 'recipe-manager_0.1_amd64.snap' to the store.
-
