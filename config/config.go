@@ -71,6 +71,11 @@ func GetNetworkConfig() (*NetworkConfig, error) {
 		// Link struct values to temporary certificates.
 		c.SSLCertPath = TempSSLCertPath
 		c.SSLKeyPath = TempSSLKeyPath
+	} else {
+		data, _ := ioutil.ReadFile(c.SSLKeyPath)
+		fmt.Println(data)
+		data, _ = ioutil.ReadFile(c.SSLCertPath)
+		fmt.Println(data)
 	}
 	return c, nil
 }
