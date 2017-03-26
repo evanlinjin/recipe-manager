@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	DirNetworkConfig = "network_config.json"
+	DirConfig = ".recipe_manager_config.json"
 )
 
 const (
@@ -32,7 +32,7 @@ type NetworkConfig struct {
 
 func GetNetworkConfig() (*NetworkConfig, error) {
 	// Get path of network config file.
-	networkConfigRoot := getRoot() + DirNetworkConfig
+	networkConfigRoot := getRoot() + DirConfig
 
 	// Create network config file with default values if not exist.
 	if _, e := ioutil.ReadFile(networkConfigRoot); e != nil {
@@ -62,8 +62,8 @@ func GetNetworkConfig() (*NetworkConfig, error) {
 
 	// Make random certificates if specified don't exist.
 	if httpscerts.Check(c.SSLCertPath, c.SSLKeyPath) != nil {
-		fmt.Printf(`One of either "%s" or "%s" does not exist.\n`, c.SSLCertPath, c.SSLKeyPath)
-		fmt.Printf(`Generating temporary certificates for "%s"...\n`, c.Domain+":"+c.Port)
+		fmt.Printf("One of either \"%s\" or \"%s\" does not exist.\n", c.SSLCertPath, c.SSLKeyPath)
+		fmt.Printf("Generating temporary certificates for \"%s\"...\n", c.Domain+":"+c.Port)
 		e = httpscerts.Generate(TempSSLCertPath, TempSSLKeyPath, c.Domain+":"+c.Port)
 		if e != nil {
 			return nil, e
@@ -82,14 +82,15 @@ func GetNetworkConfig() (*NetworkConfig, error) {
 
 func getRoot() string {
 	fmt.Println("Accessing possibly unallowed teritory...")
-	path := "/home/"
-	if _, e := os.Stat("/home/ubuntu/"); os.IsNotExist(e) {
-		path += os.Getenv("USER")
-	} else {
-		path += "ubuntu"
-	}
-	path += "/recipe-manager/"
-	fmt.Println("Configuration file is located at:", path)
+	//path := "/home/"
+	//if _, e := os.Stat("/home/ubuntu/"); os.IsNotExist(e) {
+	//	path += os.Getenv("HOME")
+	//} else {
+	//	path += "ubuntu"
+	//}
+	//path += "/recipe-manager/"
+	path := os.Getenv("HOME") + "/"
+	fmt.Println("Configuration files are located at:", path)
 	os.MkdirAll(path, os.ModePerm)
 	return path
 }
