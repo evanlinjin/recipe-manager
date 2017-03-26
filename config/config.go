@@ -16,8 +16,8 @@ const (
 	DefaultDomain      = "localhost"
 	DefaultPort        = "8080"
 	DefaultMongo       = "mongodb://127.0.0.1:32017"
-	DefaultSSLCertPath = "/home/ubuntu/ssl/0000_csr-certbot.pem"
-	DefaultSSLKeyPath  = "/home/ubuntu/ssl/0000_key-certbot.pem"
+	DefaultSSLCertPath = "/etc/letsencrypt/live/recipemanager.io/fullchain.pem"
+	DefaultSSLKeyPath  = "/etc/letsencrypt/live/recipemanager.io/privkey.pem"
 	TempSSLCertPath    = "temp_cert.pem"
 	TempSSLKeyPath     = "temp_key.pem"
 )
@@ -73,9 +73,9 @@ func GetNetworkConfig() (*NetworkConfig, error) {
 		c.SSLKeyPath = TempSSLKeyPath
 	} else {
 		data, _ := ioutil.ReadFile(c.SSLKeyPath)
-		fmt.Println(data)
+		fmt.Println(string(data))
 		data, _ = ioutil.ReadFile(c.SSLCertPath)
-		fmt.Println(data)
+		fmt.Println(string(data))
 	}
 	return c, nil
 }
