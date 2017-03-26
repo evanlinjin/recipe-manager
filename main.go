@@ -20,12 +20,12 @@ const (
 
 func main() {
 	http.HandleFunc("/", handler)
-	e := http.ListenAndServe(":"+_PortHTTP, nil)
 	c, e := config.GetNetworkConfig()
 	if e != nil {
 		log.Fatal(e)
 	}
-	e = http.ListenAndServeTLS(":"+_Port, c.SSLCertPath, c.SSLKeyPath, nil)
+	log.Printf("Listening on %s:%s ...", c.Domain, c.Port)
+	e = http.ListenAndServeTLS(":"+c.Port, c.SSLCertPath, c.SSLKeyPath, nil)
 	if e != nil {
 		log.Fatal(e)
 	}
@@ -44,37 +44,40 @@ func NewTimestamp() *Timestamp {
 }
 
 func handler(w http.ResponseWriter, r *http.Request) {
-	if r.TLS == nil {
-		http.Redirect(w, r, "https://"+_DomainName, http.StatusMovedPermanently)
-		return
-	}
-
-	w.Header().Set("Content-Type", "text/html;charset=UTF-8")
-	session, e := mgo.Dial("mongodb://127.0.0.1:32017")
-	if e != nil {
-		w.Write([]byte(e.Error()))
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	defer session.Close()
-
-	c := session.DB("test").C("timestaps")
-	if e = c.Insert(NewTimestamp()); e != nil {
-		w.Write([]byte(e.Error()))
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	n, e := c.Count()
-	if e != nil {
-		w.Write([]byte(e.Error()))
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	w.Write([]byte("Hello World! We have had " + strconv.Itoa(n) + " visits!"))
+	w.Write([]byte("Hello World!"))
 	w.WriteHeader(http.StatusOK)
 	return
+	//if r.TLS == nil {
+	//	http.Redirect(w, r, "https://"+_DomainName, http.StatusMovedPermanently)
+	//	return
+	//}
+	//
+	//w.Header().Set("Content-Type", "text/html;charset=UTF-8")
+	//session, e := mgo.Dial("mongodb://127.0.0.1:32017")
+	//if e != nil {
+	//	w.Write([]byte(e.Error()))
+	//	w.WriteHeader(http.StatusInternalServerError)
+	//	return
+	//}
+	//defer session.Close()
+	//
+	//c := session.DB("test").C("timestaps")
+	//if e = c.Insert(NewTimestamp()); e != nil {
+	//	w.Write([]byte(e.Error()))
+	//	w.WriteHeader(http.StatusInternalServerError)
+	//	return
+	//}
+	//
+	//n, e := c.Count()
+	//if e != nil {
+	//	w.Write([]byte(e.Error()))
+	//	w.WriteHeader(http.StatusInternalServerError)
+	//	return
+	//}
+	//
+	//w.Write([]byte("Hello World! We have had " + strconv.Itoa(n) + " visits!"))
+	//w.WriteHeader(http.StatusOK)
+	//return
 }
 
 // GetPort returns the port number.
