@@ -1,12 +1,11 @@
 package config
 
 import (
-	"os"
 	"encoding/json"
 	"fmt"
 	"github.com/kabukky/httpscerts"
 	"io/ioutil"
-	"log"
+	"os"
 )
 
 const (
