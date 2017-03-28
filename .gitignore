@@ -26,3 +26,5 @@ _testmain.go
 # Project files.
 .idea
 build*
+
+*.pem
