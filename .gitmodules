@@ -1,0 +1,3 @@
+[submodule "qtclient/src/QTinyAes"]
+	path = qtclient/src/QTinyAes
+	url = https://github.com/Skycoder42/QTinyAes
