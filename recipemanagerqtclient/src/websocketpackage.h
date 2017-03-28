@@ -1,13 +1,20 @@
 #ifndef WEBSOCKETPACKAGE_H
 #define WEBSOCKETPACKAGE_H
 
-#include <QByteArray>
-#include <crypto++/aes.h>
+#include <QJsonObject>
+#include <QJsonDocument>
+#include <QMessageAuthenticationCode>
+
+#include "QTinyAes/QTinyAes/qtinyaes.h"
 
 class WebSocketPackage {
 public:
+
+    static QByteArray MakePackage(const QJsonObject &obj, const QByteArray &key);
+    static QJsonObject ReadPackage(const QByteArray &data, const QByteArray &key);
+
     static const QByteArray MakeRandomBytes(const int &size);
-//    byte[1] ToStdBytes();
+
 };
 
 #endif // WEBSOCKETPACKAGE_H
