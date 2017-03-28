@@ -5,8 +5,6 @@
 #include <QJsonDocument>
 #include <QMessageAuthenticationCode>
 
-#include "QTinyAes/QTinyAes/qtinyaes.h"
-
 class WebSocketPackage {
 public:
 
