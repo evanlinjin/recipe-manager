@@ -19,6 +19,6 @@ apps:
 parts:
   server:
     plugin: go
-    source: . #https://github.com/evanlinjin/gooseberry-recipe-manager-heroku.git
+    source: ./recipemanagerserver #https://github.com/evanlinjin/gooseberry-recipe-manager-heroku.git
     prime:
         - bin/recipe-manager
