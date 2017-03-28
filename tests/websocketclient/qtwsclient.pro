@@ -3,7 +3,12 @@ QT += qml quick websockets
 CONFIG += c++11
 
 SOURCES += main.cpp \
-    ws.cpp
+    ws.cpp \
+    ../../qtclient/src/QTinyAes/QTinyAes/qtinyaes.cpp \
+    ../../qtclient/src/packageencryptor.cpp \
+    ../../qtclient/src/websocketconnection.cpp \
+    ../../qtclient/src/websocketpackage.cpp \
+    ../../qtclient/src/QTinyAes/QTinyAes/tiny-AES128-C/aes.c
 
 RESOURCES += qml.qrc
 
@@ -30,4 +35,9 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
 HEADERS += \
-    ws.h
+    ws.h \
+    ../../qtclient/src/QTinyAes/QTinyAes/tiny-AES128-C/aes.h \
+    ../../qtclient/src/QTinyAes/QTinyAes/qtinyaes.h \
+    ../../qtclient/src/packageencryptor.h \
+    ../../qtclient/src/websocketconnection.h \
+    ../../qtclient/src/websocketpackage.h

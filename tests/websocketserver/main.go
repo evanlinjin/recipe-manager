@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"net/http"
-	"sync"
 
 	"github.com/gorilla/websocket"
 	"github.com/kabukky/httpscerts"
@@ -33,31 +32,29 @@ func main() {
 
 func makeHandler(upgrader *websocket.Upgrader, talkGroup *talkrelay.TalkGroup) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		wsc, e := upgrader.Upgrade(w, r, nil)
+		wsm, e := talkrelay.MakeWSManager(upgrader, w, r)
 		if e != nil {
 			fmt.Println(e)
 			return
 		}
 
-		readMux, writeMux := sync.Mutex{}, sync.Mutex{}
-		quitChan := make(chan int)
-
 		fmt.Println("Connection established with", r.RemoteAddr)
 		defer fmt.Println("Connection with", r.RemoteAddr, "closed")
+
+		quitChan := make(chan int)
 		defer func() { quitChan <- 1 }()
 
-		go func() {
-			msgChan := make(chan string)
-			talkGroup.AddChef(r.RemoteAddr, msgChan)
-			defer talkGroup.RmChef(r.RemoteAddr)
+		msgChan, e := talkGroup.AddChef(r.RemoteAddr)
+		if e != nil {
+			return
+		}
+		defer talkGroup.RmChef(r.RemoteAddr)
 
+		go func() {
 			for {
 				select {
 				case m := <-msgChan:
-					writeMux.Lock()
-					wsc.WriteMessage(websocket.TextMessage, []byte(m))
-					writeMux.Unlock()
-
+					wsm.WriteMessage([]byte(m))
 				case <-quitChan:
 					return
 				}
@@ -65,9 +62,7 @@ func makeHandler(upgrader *websocket.Upgrader, talkGroup *talkrelay.TalkGroup) f
 		}()
 
 		for {
-			readMux.Lock()
-			_, data, e := wsc.ReadMessage()
-			readMux.Unlock()
+			data, e := wsm.ReadMessage()
 			if e != nil {
 				fmt.Println(e)
 				return
