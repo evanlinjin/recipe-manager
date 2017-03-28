@@ -1,3 +1,3 @@
-[submodule "recipemanagerqtclient/src/mods"]
-	path = recipemanagerqtclient/src/mods
+[submodule "recipemanagerqtclient/src/QTinyAes"]
+	path = recipemanagerqtclient/src/QTinyAes
 	url = https://github.com/Skycoder42/QTinyAes
