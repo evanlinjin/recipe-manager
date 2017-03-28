@@ -1,0 +1,3 @@
+[submodule "recipemanagerqtclient/src/mods"]
+	path = recipemanagerqtclient/src/mods
+	url = https://github.com/Skycoder42/QTinyAes
