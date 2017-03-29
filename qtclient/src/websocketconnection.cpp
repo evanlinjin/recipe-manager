@@ -10,7 +10,7 @@ WebSocketConnection::WebSocketConnection(QObject *parent) : QObject(parent) {
             this, SLOT(onDisconnected()));
 
     connect(&m_ws, SIGNAL(textMessageReceived(QString)),
-            this, SIGNAL(msgRecieved(QString)));
+            this, SLOT(onMsg(QString)));
 
     connect(&m_ws, SIGNAL(error(QAbstractSocket::SocketError)),
             this, SLOT(onError(QAbstractSocket::SocketError)));
@@ -21,6 +21,7 @@ WebSocketConnection::WebSocketConnection(QObject *parent) : QObject(parent) {
     typedef void (QWebSocket:: *sslErrorsSignal)(const QList<QSslError> &);
     connect(&m_ws, static_cast<sslErrorsSignal>(&QWebSocket::sslErrors),
             this, &WebSocketConnection::onSslErrors);
+    m_enc = new Encryptor(this);
 }
 
 void WebSocketConnection::onConnected() {
@@ -31,6 +32,26 @@ void WebSocketConnection::onConnected() {
 void WebSocketConnection::onDisconnected() {
     m_connected = false;
     emit connectedChanged();
+}
+
+void WebSocketConnection::onMsg(QString msg) {
+    // Split msg into Signature and Data.
+    QStringList split = msg.split('.', QString::SkipEmptyParts);
+    if (split.length() != 2) {
+        qDebug("Expected %d parts, got %d", 2, split.length());
+        return;
+    }
+
+    auto encSignature = split.at(0).toLatin1();
+    auto encPackage = split.at(1).toLatin1();
+
+    // Decrypt Signature and Data.
+    auto signature = m_enc->decrypt(encSignature);
+    auto package = m_enc->decrypt(encPackage);
+
+    // Vertify Data with Signature.
+    QJsonObject obj = Package::ReadPackage(package, signature);
+    emit msgRecieved(obj["msg"].toString());
 }
 
 void WebSocketConnection::onPong(quint64 i, QByteArray a) {
@@ -46,7 +67,28 @@ void WebSocketConnection::close() {
 }
 
 void WebSocketConnection::sendMsg(QString v) {
-    m_ws.sendTextMessage(v);
+    // Make random Signature.
+    auto signature = m_enc->makeKey();
+    qDebug() << "RAW SIGNATURE:" << signature;
+
+    // Make Data into Package with Signature.
+    QJsonObject obj;
+    obj["msg"] = v;
+    auto package = Package::MakePackage(obj, signature);
+    qDebug() << "RAW PACKAGE:" << package;
+
+    // Encrypt Data and Signature.
+    auto encSignature = m_enc->encrypt(signature);
+    qDebug() << "ENC SIGNATURE:" << encSignature;
+    auto encPackage = m_enc->encrypt(package);
+    qDebug() << "ENC PACKAGE:" << encPackage;
+
+    // Join with dot.
+    QByteArray out;
+    out.append(encSignature).append('.').append(encPackage);
+
+    qDebug() << "SENDING:" << QString::fromLatin1(out);
+    m_ws.sendTextMessage(QString::fromLatin1(out));
 }
 
 void WebSocketConnection::sendPing(QString v) {

@@ -65,7 +65,7 @@ func makeHandler(upgrader *websocket.Upgrader, talkGroup *talkrelay.TalkGroup) f
 			data, e := wsm.ReadMessage()
 			if e != nil {
 				fmt.Println(e)
-				return
+				continue
 			}
 			go talkGroup.Talk(fmt.Sprintf("%s", data))
 		}

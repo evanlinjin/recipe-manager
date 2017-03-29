@@ -1,5 +1,5 @@
 #ifndef PACKAGEENCRYPTOR_H
-#define PACKAGEENCRYPTOR_H
+#define ENCRYPTOR_H
 
 #include <cryptopp/aes.h>
 #include <cryptopp/randpool.h>
@@ -9,24 +9,27 @@
 
 #include <QObject>
 #include <QDebug>
-#include <iostream>
+//#include <iostream>
 
-class PackageEncryptor : public QObject
+#include "package.h"
+
+class Encryptor : public QObject
 {
     Q_OBJECT
 public:
-    explicit PackageEncryptor(QObject *parent = 0);
+    explicit Encryptor(QObject *parent = 0);
+    static const int DEF_SIZE = 16;
 
 private:
-    const int DEF_SIZE = 16;
     byte m_key[16];
 
 public slots:
-    QByteArray encryptPackage(QByteArray data);
-    QByteArray decryptPackage(QByteArray data);
+    QByteArray encrypt(QByteArray data);
+    QByteArray decrypt(QByteArray data);
 
     void setKey(const QByteArray& encKey);
     QByteArray makeKey();
+//    QByteArray getKey();
 };
 
-#endif // PACKAGEENCRYPTOR_H
+#endif // ENCRYPTOR_H

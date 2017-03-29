@@ -1,10 +1,10 @@
-#include "packageencryptor.h"
+#include "encryptor.h"
 
-PackageEncryptor::PackageEncryptor(QObject *parent) : QObject(parent) {
+Encryptor::Encryptor(QObject *parent) : QObject(parent) {
     memset(m_key, 0, DEF_SIZE);
 }
 
-QByteArray PackageEncryptor::encryptPackage(QByteArray data) {
+QByteArray Encryptor::encrypt(QByteArray data) {
 
     // Pad data with 0's. TODO: OPTIMIZE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     while (data.length() % DEF_SIZE != 0) {
@@ -42,7 +42,7 @@ QByteArray PackageEncryptor::encryptPackage(QByteArray data) {
             .toBase64(QByteArray::Base64UrlEncoding | QByteArray::OmitTrailingEquals);
 }
 
-QByteArray PackageEncryptor::decryptPackage(QByteArray data) {
+QByteArray Encryptor::decrypt(QByteArray data) {
     QByteArray rawData = QByteArray::fromBase64(
                 data, QByteArray::Base64UrlEncoding | QByteArray::OmitTrailingEquals);
 
@@ -78,10 +78,10 @@ QByteArray PackageEncryptor::decryptPackage(QByteArray data) {
     CryptoPP::CBC_Mode<CryptoPP::AES>::Decryption e(m_key, DEF_SIZE, iv);
     e.ProcessData((byte*)plainText, (byte*)cipherText, msgLen);
 
-    return QByteArray(plainText, msgLen);
+    return QByteArray(plainText, msgLen).trimmed();
 }
 
-void PackageEncryptor::setKey(const QByteArray &encKey) {
+void Encryptor::setKey(const QByteArray &encKey) {
     QByteArray key = QByteArray::fromBase64(
                 encKey, QByteArray::Base64UrlEncoding | QByteArray::OmitTrailingEquals);
 
@@ -95,15 +95,20 @@ void PackageEncryptor::setKey(const QByteArray &encKey) {
     }
 }
 
-QByteArray PackageEncryptor::makeKey() {
-    CryptoPP::AutoSeededRandomPool rnd;
-    rnd.GenerateBlock(m_key, DEF_SIZE);
-
+QByteArray Encryptor::makeKey() {
     QByteArray key;
     key.reserve(DEF_SIZE);
-    for (int i = 0; i < DEF_SIZE; i++) {
-        key[i] = (char)key[i];
-    }
+
+    CryptoPP::AutoSeededRandomPool rnd;
+    rnd.GenerateBlock((byte*)key.data(), DEF_SIZE);
 
     return key.toBase64(QByteArray::Base64UrlEncoding | QByteArray::OmitTrailingEquals);
 }
+
+//QByteArray Encryptor::getKey() {
+//    QByteArray key;
+//    key.reserve(DEF_SIZE);
+//    for (int i = 0; i < DEF_SIZE; i++) {
+//        key[i] = (char)key[i];
+//    }
+//}

@@ -67,7 +67,7 @@ func TestEncryptor_Decrypt2(t *testing.T) {
 	//	t.Error(e)
 	//}
 
-	pt, e := enc.Decrypt([]byte("qIqQjYAmH6dE1xGxgUbgv5PRLqPydKWrMGQvXHvPkS2-GsrcVS_kQ00ZipZUq3cd8Hm048a6wOe9YxoXyEAHZGh-mpNq6FvHrXNJw0h05yA"))
+	pt, e := enc.Decrypt([]byte("5_Bghih5P4Brd-52waj04Add1ZvvX-kpBne4Nxm9bZE"))
 	if e != nil {
 		t.Error(e)
 	}

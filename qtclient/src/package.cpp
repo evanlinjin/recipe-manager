@@ -1,6 +1,6 @@
-#include "websocketpackage.h"
+#include "package.h"
 
-QByteArray WebSocketPackage::MakePackage(const QJsonObject &obj, const QByteArray &key) {
+QByteArray Package::MakePackage(const QJsonObject &obj, const QByteArray &key) {
     auto dataPart = QJsonDocument(obj)
             .toJson(QJsonDocument::Compact)
             .toBase64(QByteArray::Base64UrlEncoding |
@@ -17,7 +17,7 @@ QByteArray WebSocketPackage::MakePackage(const QJsonObject &obj, const QByteArra
             .append(signaturePart);
 }
 
-QJsonObject WebSocketPackage::ReadPackage(const QByteArray &data, const QByteArray &key) {
+QJsonObject Package::ReadPackage(const QByteArray &data, const QByteArray &key) {
     auto dot = data.indexOf(".");
     auto dataPart = data.left(dot);
     auto signaturePart = data.right(data.length() - dot - 1);
@@ -42,9 +42,13 @@ QJsonObject WebSocketPackage::ReadPackage(const QByteArray &data, const QByteArr
     return QJsonDocument::fromJson(out).object();
 }
 
-const QByteArray WebSocketPackage::MakeRandomBytes(const int &size) {
+const QByteArray Package::MakeRandomBytes(const int &size) {
+    byte randBytes[size];
+    CryptoPP::AutoSeededRandomPool rnd;
+    rnd.GenerateBlock(randBytes, size);
+
     QByteArray data(size, Qt::Uninitialized);
     for(int i = 0; i < size; i++)
-        data[i] = (char)qrand();
+        data[i] = (char)randBytes[i];
     return data;
 }

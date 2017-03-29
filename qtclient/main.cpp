@@ -5,7 +5,7 @@
 #include <iostream>
 #include <cryptopp/aes.h>
 
-#include "src/websocketpackage.h"
+#include "src/package.h"
 
 int main(int argc, char *argv[])
 {

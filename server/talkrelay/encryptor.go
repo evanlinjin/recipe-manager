@@ -8,11 +8,14 @@ import (
 	"io"
 	"crypto/rand"
 	"crypto/cipher"
+	"sync"
+	"bytes"
 )
 
 const DefSize = aes.BlockSize
 
 type Encryptor struct {
+	sync.Mutex
 	Key []byte
 }
 
@@ -25,6 +28,8 @@ func MakeEncryptor() (enc Encryptor) {
 }
 
 func (r *Encryptor) MakeRandomKey() ([]byte, error) {
+	r.Lock()
+	defer r.Unlock()
 	r.Key = make([]byte, DefSize)
 	if _, e := io.ReadFull(rand.Reader, r.Key); e != nil {
 		return nil, e
@@ -33,6 +38,8 @@ func (r *Encryptor) MakeRandomKey() ([]byte, error) {
 }
 
 func (r *Encryptor) ReadEncodedKey(encKey []byte) (e error) {
+	r.Lock()
+	defer r.Unlock()
 	key , e := base64.RawURLEncoding.DecodeString(string(encKey))
 	if e != nil {
 		return
@@ -49,7 +56,9 @@ func (r *Encryptor) Encrypt(plainText []byte) (encodedCipher []byte, e error) {
 		plainText = append(plainText, byte(' '))
 	}
 
+	r.Lock()
 	block, e := aes.NewCipher(r.Key)
+	r.Unlock()
 	if e != nil {
 		return
 	}
@@ -71,7 +80,9 @@ func (r *Encryptor) Encrypt(plainText []byte) (encodedCipher []byte, e error) {
 func (r *Encryptor) Decrypt(encodedCipher []byte) (plainText []byte, e error) {
 	cipherText, e := base64.RawURLEncoding.DecodeString(string(encodedCipher))
 
+	r.Lock()
 	block, e := aes.NewCipher(r.Key)
+	r.Unlock()
 	if e != nil {
 		return
 	}
@@ -93,5 +104,6 @@ func (r *Encryptor) Decrypt(encodedCipher []byte) (plainText []byte, e error) {
 
 	plainText = make([]byte, len(cipherText))
 	cipher.NewCBCDecrypter(block, iv).CryptBlocks(plainText, cipherText)
+	plainText = bytes.TrimSpace(plainText)
 	return
 }

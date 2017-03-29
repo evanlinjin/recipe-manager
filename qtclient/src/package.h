@@ -1,11 +1,13 @@
-#ifndef WEBSOCKETPACKAGE_H
-#define WEBSOCKETPACKAGE_H
+#ifndef PACKAGE_H
+#define PACKAGE_H
+
+#include <cryptopp/osrng.h>
 
 #include <QJsonObject>
 #include <QJsonDocument>
 #include <QMessageAuthenticationCode>
 
-class WebSocketPackage {
+class Package {
 public:
 
     static QByteArray MakePackage(const QJsonObject &obj, const QByteArray &key);
@@ -15,4 +17,4 @@ public:
 
 };
 
-#endif // WEBSOCKETPACKAGE_H
+#endif //PACKAGE_H

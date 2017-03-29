@@ -11,6 +11,8 @@ import (
 
 // MakePackage makes a package to send via websocket for client/server talk.
 func MakePackage(obj interface{}, key []byte) (pac []byte, e error) {
+	key = bytes.TrimSpace(key)
+
 	objBytes, e := json.Marshal(obj)
 	if e != nil {
 		return
@@ -29,6 +31,7 @@ func MakePackage(obj interface{}, key []byte) (pac []byte, e error) {
 
 // ReadPackage reads a package.
 func ReadPackage(pac []byte, key []byte, obj interface{}) error {
+	fmt.Println("[ReadPackage] Pkg:", string(pac), ", Key:", string(key))
 	dot := bytes.Index(pac, []byte("."))
 	if dot == -1 {
 		return fmt.Errorf("invalid package - dot at %v", dot)
