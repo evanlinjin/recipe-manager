@@ -69,19 +69,15 @@ void WebSocketConnection::close() {
 void WebSocketConnection::sendMsg(QString v) {
     // Make random Signature.
     auto signature = m_enc->makeKey();
-    qDebug() << "RAW SIGNATURE:" << signature;
 
     // Make Data into Package with Signature.
     QJsonObject obj;
     obj["msg"] = v;
     auto package = Package::MakePackage(obj, signature);
-    qDebug() << "RAW PACKAGE:" << package;
 
     // Encrypt Data and Signature.
     auto encSignature = m_enc->encrypt(signature);
-    qDebug() << "ENC SIGNATURE:" << encSignature;
     auto encPackage = m_enc->encrypt(package);
-    qDebug() << "ENC PACKAGE:" << encPackage;
 
     // Join with dot.
     QByteArray out;
@@ -96,13 +92,13 @@ void WebSocketConnection::sendPing(QString v) {
 }
 
 void WebSocketConnection::onError(QAbstractSocket::SocketError e) {
-    qErrnoWarning(e, "Websocket error");
+    qErrnoWarning(e, "[WebSocketConnection] Error:");
 }
 
 void WebSocketConnection::onSslErrors(const QList<QSslError> &errors) {
     Q_UNUSED(errors);
     foreach(QSslError e, errors) {
-        qInfo() << "SSL error:" << e.errorString();
+        qInfo() << "[WebSocketConnection] SSL Error:" << e.errorString();
     }
     m_ws.ignoreSslErrors();
 }
