@@ -29,15 +29,29 @@ func MakeWSManager(upgrader *websocket.Upgrader, w http.ResponseWriter, r *http.
 }
 
 func (m *WSManager) WriteMessage(data []byte) error {
+	// Make random Signature.
+	sig, _ := m.enc.makeKey()
+
+	// Make Data into Package with Signature.
+	pkg, _ := MakePackage(Msg{string(data)}, sig)
+
+	// Encrypt Data and Signature.
+	encSig, _ := m.enc.Encrypt(sig)
+	encPkg, _ := m.enc.Encrypt(pkg)
+
+	// Join with dot.
+	out := append(encSig, byte('.'))
+	out = append(out, encPkg...)
+
 	m.writeMux.Lock()
 	defer m.writeMux.Unlock()
-	return m.c.WriteMessage(websocket.TextMessage, data)
+	return m.c.WriteMessage(websocket.TextMessage, out)
 }
 
 func (m *WSManager) ReadMessage() (data []byte, e error) {
 	m.readMux.Lock()
-	defer m.readMux.Unlock()
 	_, msg, e := m.c.ReadMessage()
+	m.readMux.Unlock()
 
 	// Split message into signature and data.
 	split := bytes.Split(msg, []byte("."))
@@ -64,7 +78,7 @@ func (m *WSManager) ReadMessage() (data []byte, e error) {
 
 	// Vertify data with signature.
 	var txt Msg
-	e = ReadPackage(pkg, sig, &m)
+	e = ReadPackage(pkg, sig, &txt)
 	if e != nil {
 		return
 	}

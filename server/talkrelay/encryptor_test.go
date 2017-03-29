@@ -35,7 +35,7 @@ func TestEncryptor_Encrypt(t *testing.T) {
 func TestEncryptor_Decrypt(t *testing.T) {
 	enc := MakeEncryptor()
 
-	if e := enc.ReadEncodedKey([]byte("ggw-eExRUaA37UeKIQpP8Q")); e != nil {
+	if e := enc.setKey([]byte("ggw-eExRUaA37UeKIQpP8Q")); e != nil {
 		t.Error(e)
 	}
 
@@ -63,7 +63,7 @@ func TestEncryptor_Decrypt(t *testing.T) {
 func TestEncryptor_Decrypt2(t *testing.T) {
 	enc := MakeEncryptor()
 
-	//if e := enc.ReadEncodedKey([]byte("AyWFv1eGEtrd_JKT-emcBA")); e != nil {
+	//if e := enc.setKey([]byte("AyWFv1eGEtrd_JKT-emcBA")); e != nil {
 	//	t.Error(e)
 	//}
 

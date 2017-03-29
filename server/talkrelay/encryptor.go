@@ -27,17 +27,15 @@ func MakeEncryptor() (enc Encryptor) {
 	return
 }
 
-func (r *Encryptor) MakeRandomKey() ([]byte, error) {
-	r.Lock()
-	defer r.Unlock()
-	r.Key = make([]byte, DefSize)
-	if _, e := io.ReadFull(rand.Reader, r.Key); e != nil {
+func (r *Encryptor) makeKey() ([]byte, error) {
+	key := make([]byte, DefSize)
+	if _, e := io.ReadFull(rand.Reader, key); e != nil {
 		return nil, e
 	}
-	return []byte(base64.RawURLEncoding.EncodeToString(r.Key)), nil
+	return []byte(base64.RawURLEncoding.EncodeToString(key)), nil
 }
 
-func (r *Encryptor) ReadEncodedKey(encKey []byte) (e error) {
+func (r *Encryptor) setKey(encKey []byte) (e error) {
 	r.Lock()
 	defer r.Unlock()
 	key , e := base64.RawURLEncoding.DecodeString(string(encKey))
