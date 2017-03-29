@@ -12,6 +12,8 @@ SOURCES += main.cpp \
 
 RESOURCES += qml.qrc
 
+LIBS += -L/usr/lib/crypto++ -lcryptopp
+
 # Additional import path used to resolve QML modules in Qt Creator's code model
 QML_IMPORT_PATH =
 
