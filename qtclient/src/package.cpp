@@ -31,7 +31,9 @@ QJsonObject Package::ReadPackage(const QByteArray &data, const QByteArray &key) 
                                                     QByteArray::OmitTrailingEquals);
 
     if (generatedSignature != obtainedSignature) {
-        qInfo("JWT::ReadJWT : Unvertified - Returning Empty Object.");
+        qInfo("[Package::ReadPackage] Unvertified.");
+        qInfo() << "\tGENERATED:" << "LEN:" << generatedSignature.length();
+        qInfo() << "\t OBTAINED:" << "LEN:" << obtainedSignature.length();
         return QJsonObject();
     }
 

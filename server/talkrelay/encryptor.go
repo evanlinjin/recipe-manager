@@ -28,10 +28,12 @@ func MakeEncryptor() (enc Encryptor) {
 }
 
 func (r *Encryptor) makeKey() ([]byte, error) {
-	key := make([]byte, DefSize)
-	if _, e := io.ReadFull(rand.Reader, key); e != nil {
-		return nil, e
-	}
+	//key := make([]byte, DefSize)
+	//if _, e := io.ReadFull(rand.Reader, key); e != nil {
+	//	return nil, e
+	//}
+	key := []byte("1234567890123456")
+	//return []byte("1234567890123456"), nil
 	return []byte(base64.RawURLEncoding.EncodeToString(key)), nil
 }
 

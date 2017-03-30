@@ -64,17 +64,19 @@ void WebSocketConnection::send(QJsonObject &obj) {
     QByteArray out;
     out.append(encSignature).append('.').append(encPackage);
 
-    qInfo() << "[WebSocketConnection::send] (ciphr)" << out;
+//    qInfo() << "[WebSocketConnection::send] (ciphr)" << out;
     m_ws.sendTextMessage(QString::fromLatin1(out));
 }
 
 void WebSocketConnection::onConnected() {
+//    m_enc->resetKey();
     m_connected = true;
     emit connectedChanged();
     m_timer->start(TIMER_INTERVAL_MS);
 }
 
 void WebSocketConnection::onDisconnected() {
+    m_enc->resetKey();
     m_connected = false;
     emit connectedChanged();
     m_msgs->resetIds();
@@ -82,7 +84,7 @@ void WebSocketConnection::onDisconnected() {
 }
 
 void WebSocketConnection::onReceived(QString data) {
-    qInfo() << "[WebSocketConnection::onReceived] (ciphr)" << data;
+//    qInfo() << "[WebSocketConnection::onReceived] (ciphr)" << data;
 
     // Split msg into Signature and Data.
     QStringList split = data.split('.', QString::SkipEmptyParts);
@@ -104,7 +106,7 @@ void WebSocketConnection::onReceived(QString data) {
     if (m_msgs->checkIncomingMessage(msg) == false) {
         return;
     }
-    emit msgRecieved(msg);
+
     process(msg);
 }
 
@@ -113,7 +115,9 @@ void WebSocketConnection::process(const QJsonObject &obj) {
 
     if (msg.cmd == "handshake") {
         ps_handshake(msg);
+        return;
     }
+    emit msgRecieved(obj);
 }
 
 bool WebSocketConnection::ps_handshake(const MSG::Message &msg) {

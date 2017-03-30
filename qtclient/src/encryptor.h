@@ -29,7 +29,7 @@ public slots:
 
     void setKey(const QByteArray& encKey);
     QByteArray makeKey();
-//    QByteArray getKey();
+    void resetKey();
 };
 
 #endif // ENCRYPTOR_H

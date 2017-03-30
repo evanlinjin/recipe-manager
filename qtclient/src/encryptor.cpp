@@ -110,10 +110,6 @@ QByteArray Encryptor::makeKey() {
     return key.toBase64(QByteArray::Base64UrlEncoding | QByteArray::OmitTrailingEquals);
 }
 
-//QByteArray Encryptor::getKey() {
-//    QByteArray key;
-//    key.reserve(DEF_SIZE);
-//    for (int i = 0; i < DEF_SIZE; i++) {
-//        key[i] = (char)key[i];
-//    }
-//}
+void Encryptor::resetKey() {
+    memset(m_key, 0, DEF_SIZE);
+}

@@ -40,16 +40,14 @@ func MakeWSManager(upgrader *websocket.Upgrader, w http.ResponseWriter, r *http.
 
 func (m *WSManager) Handshake(wait time.Duration) (e error) {
 	key, _ := m.enc.makeKey()
+	fmt.Println("Genereated key:", string(key))
 
-	var resChan = make(chan *Message)
+	var resChan = make(chan *Message, 5)
 
 	go func() {
 		res, _ := m.GetMessage()
-		select {
-		case resChan <- res:
-			fmt.Println("GOT:", res)
-		default:
-		}
+		resChan <- res
+		fmt.Println("GOT:", res)
 	}()
 
 	req, _ := m.SendRequestMessage("handshake", key)

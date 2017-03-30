@@ -6,6 +6,7 @@
 #include <QJsonObject>
 #include <QJsonDocument>
 #include <QMessageAuthenticationCode>
+#include <QDebug>
 
 class Package {
 public:

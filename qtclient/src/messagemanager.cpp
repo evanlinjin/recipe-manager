@@ -50,6 +50,7 @@ QJsonObject* MessageManager::makeResponseMessage(const QJsonObject &reqMsg, cons
 }
 
 bool MessageManager::checkIncomingMessage(QJsonObject &msg) {
+    qDebug() << "[MessageManager::checkIncomingMessage]" << msg.value(MSG::Command);
     if (msg.value(MSG::Meta).isUndefined()) {
         qInfo() << "msg has no meta";
         return false;
