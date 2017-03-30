@@ -63,13 +63,13 @@ func makeHandler(upgrader *websocket.Upgrader, talkGroup *talkrelay.TalkGroup) f
 		}()
 
 		for {
-			data, e := wsm.DeprecatedReadMessage()
+			//data, e := wsm.DeprecatedReadMessage()
+			msg, e := wsm.GetMessage()
 			if e != nil {
 				fmt.Println(e)
-
 				return
 			}
-			go talkGroup.Talk(fmt.Sprintf("%s", data))
+			go talkGroup.Talk(fmt.Sprintf("%s", msg.Data))
 		}
 	}
 }

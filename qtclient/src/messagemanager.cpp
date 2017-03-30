@@ -6,7 +6,7 @@ MessageManager::MessageManager(QObject *parent) :
 
 }
 
-QJsonObject* MessageManager::makeRequestMessage(QString &cmd, QJsonValue &data) {
+QJsonObject* MessageManager::makeRequestMessage(const QString &cmd, const QJsonValue &data) {
     outgoingId += 1;
 
     QJsonObject meta;
@@ -21,7 +21,7 @@ QJsonObject* MessageManager::makeRequestMessage(QString &cmd, QJsonValue &data) 
     return msg;
 }
 
-QJsonObject* MessageManager::makeResponseMessage(QJsonObject &reqMsg, QJsonValue &data) {
+QJsonObject* MessageManager::makeResponseMessage(const QJsonObject &reqMsg, const QJsonValue &data) {
     if (reqMsg.contains(Message::Meta) == false) {
         qInfo() << "reqMsg.Meta is nil";
         return nullptr;

@@ -9,6 +9,7 @@
 
 #include "package.h"
 #include "encryptor.h"
+#include "messagemanager.h"
 
 class WebSocketConnection : public QObject
 {
@@ -19,10 +20,16 @@ public:
 
     bool connected() const {return m_connected;}
 
+    bool sendRequestMessage(const QString &cmd, const QJsonValue &data);
+    bool sendResponseMessage(const QJsonObject &reqMsg, const QJsonValue &data);
+
 private:
     QWebSocket m_ws;
     Encryptor* m_enc;
+    MessageManager* m_msgs;
     bool m_connected;
+
+    void sendMsg(QJsonObject &obj);
 
 signals:
     void connectedChanged();
@@ -31,7 +38,7 @@ signals:
 private slots:
     void onConnected();
     void onDisconnected();
-    void onMsg(QString msg);
+    void onMsg(QString data);
     void onPong(quint64, QByteArray);
 
     void onError(QAbstractSocket::SocketError);
@@ -40,7 +47,7 @@ private slots:
 public slots:
     void open(QString v);
     void close();
-    void sendMsg(QJsonObject &obj);
+
     void sendPing(QString v);
 };
 

@@ -3,10 +3,8 @@
 #include <QQmlContext>
 #include <QDebug>
 
-//#include "../../qtclient/src/package.h"
-//#include "../../qtclient/src/encryptor.h"
-
 #include "../../qtclient/src/websocketconnection.h"
+#include "src/simplemessenger.h"
 
 int main(int argc, char *argv[])
 {
@@ -19,17 +17,8 @@ int main(int argc, char *argv[])
     WebSocketConnection* ws = new WebSocketConnection();
     rc->setContextProperty("WS", ws);
 
-    /* BEGIN TEST */
-//    QJsonObject obj;
-//    obj["name"] = "Evan Lin";
-//    obj["age"] = 21;
-
-//    Encryptor enc;
-//    qDebug() << "ENCRYPTED:" << enc.encrypt(Package::MakePackage(obj, ""));
-//    return 0;
-    /* BEGIN TEST */
-
-
+    SimpleMessenger* sm = new SimpleMessenger(ws);
+    rc->setContextProperty("Messenger", sm);
 
     engine.load(QUrl(QLatin1String("qrc:/main.qml")));
     return app.exec();

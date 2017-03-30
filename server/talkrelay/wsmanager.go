@@ -6,6 +6,7 @@ import (
 	"github.com/gorilla/websocket"
 	"net/http"
 	"sync"
+	"encoding/json"
 )
 
 type Msg struct {
@@ -146,10 +147,13 @@ func (m *WSManager) GetMessage() (msg *Message, e error) {
 	}
 
 	// Vertify data with signature.
+	msg = &Message{}
 	e = ReadPackage(pkg, sig, msg)
 	if e != nil {
 		return
 	}
+	test, _ := json.Marshal(msg)
+	fmt.Println(string(test))
 	// Check msg.
 	e = m.msgs.CheckIncomingMessage(msg)
 	return

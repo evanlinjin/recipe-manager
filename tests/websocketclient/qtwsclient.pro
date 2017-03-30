@@ -8,7 +8,8 @@ SOURCES += main.cpp \
     ../../qtclient/src/QTinyAes/QTinyAes/tiny-AES128-C/aes.c \
     ../../qtclient/src/package.cpp \
     ../../qtclient/src/encryptor.cpp \
-    ../../qtclient/src/messagemanager.cpp
+    ../../qtclient/src/messagemanager.cpp \
+    src/simplemessenger.cpp
 
 RESOURCES += qml.qrc
 
@@ -42,4 +43,5 @@ HEADERS += \
     ../../qtclient/src/websocketconnection.h \
     ../../qtclient/src/package.h \
     ../../qtclient/src/encryptor.h \
-    ../../qtclient/src/messagemanager.h
+    ../../qtclient/src/messagemanager.h \
+    src/simplemessenger.h

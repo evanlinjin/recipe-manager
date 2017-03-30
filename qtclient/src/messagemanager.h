@@ -28,8 +28,8 @@ public:
     const int TYPE_REQUEST = 0;
     const int TYPE_RESPONSE = 1;
 
-    QJsonObject* makeRequestMessage(QString &cmd, QJsonValue &data);
-    QJsonObject* makeResponseMessage(QJsonObject &reqMsg, QJsonValue &data);
+    QJsonObject* makeRequestMessage(const QString &cmd, const QJsonValue &data);
+    QJsonObject* makeResponseMessage(const QJsonObject &reqMsg, const QJsonValue &data);
     bool checkIncomingMessage(QJsonObject &msg);
 
 private:
