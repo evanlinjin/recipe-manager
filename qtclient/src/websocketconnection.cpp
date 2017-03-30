@@ -49,10 +49,9 @@ QJsonObject *WebSocketConnection::sendResponseMessage(const QJsonObject &reqMsg,
 }
 
 void WebSocketConnection::send(QJsonObject &obj) {
-    qInfo() << "[WebSocketConnection::send] (plain)" << obj;
+    qInfo() << "[WebSocketConnection::send]" << obj;
     // Make random Signature.
     auto signature = m_enc->makeKey();
-//    auto signature = Package::MakeRandomBytes(16);
 
     // Make Data into Package with Signature.
     auto package = Package::MakePackage(obj, signature);
@@ -65,7 +64,6 @@ void WebSocketConnection::send(QJsonObject &obj) {
     QByteArray out;
     out.append(encSignature).append('.').append(encPackage);
 
-//    qInfo() << "[WebSocketConnection::send] (ciphr)" << out;
     m_ws.sendTextMessage(QString::fromLatin1(out));
 }
 
@@ -85,7 +83,6 @@ void WebSocketConnection::onDisconnected() {
 }
 
 void WebSocketConnection::onReceived(QString data) {
-//    qInfo() << "[WebSocketConnection::onReceived] (ciphr)" << data;
 
     // Split msg into Signature and Data.
     QStringList split = data.split('.', QString::SkipEmptyParts);
@@ -103,7 +100,7 @@ void WebSocketConnection::onReceived(QString data) {
 
     // Vertify Data with Signature.
     auto msg = Package::ReadPackage(package, signature);
-    qInfo() << "[WebSocketConnection::onReceived] (plain)" << msg;
+    qInfo() << "[WebSocketConnection::onReceived]" << msg;
     if (m_msgs->checkIncomingMessage(msg) == false) {
         return;
     }

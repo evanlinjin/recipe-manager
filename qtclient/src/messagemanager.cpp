@@ -23,12 +23,14 @@ QJsonObject* MessageManager::makeRequestMessage(const QString &cmd, const QJsonV
 
 QJsonObject* MessageManager::makeResponseMessage(const QJsonObject &reqMsg, const QJsonValue &data) {
     if (reqMsg.contains(MSG::Meta) == false) {
-        qInfo() << "reqMsg.Meta is nil";
+        qInfo() << "[MessageManager::makeResponseMessage] Error:"
+                << "reqMsg.Meta is nil";
         return nullptr;
     }
     auto reqId = reqMsg.value(MSG::Meta).toObject().value(MSG::ID).toInt(0);
     if (reqId >= 0) {
-        qInfo() << "reqMsg.Meta.ID is > 0, at" << reqId;
+        qInfo() << "[MessageManager::makeResponseMessage] Error:"
+                << "reqMsg.Meta.ID is > 0, at" << reqId;
         return nullptr;
     }
     outgoingId += 1;
@@ -50,24 +52,27 @@ QJsonObject* MessageManager::makeResponseMessage(const QJsonObject &reqMsg, cons
 }
 
 bool MessageManager::checkIncomingMessage(QJsonObject &msg) {
-    qDebug() << "[MessageManager::checkIncomingMessage]" << msg.value(MSG::Command);
     if (msg.value(MSG::Meta).isUndefined()) {
-        qInfo() << "msg has no meta";
+        qInfo() << "[MessageManager::checkIncomingMessage] Error:"
+                << "msg has no meta";
         return false;
     }
     const int id = msg.value(MSG::Meta).toObject().value(MSG::ID).toInt(0);
     if (id >= 0) {
-        qInfo() << "incoming msg has +ve id;" << id;
+        qInfo() << "[MessageManager::checkIncomingMessage] Error:"
+                << "incoming msg has +ve id;" << id;
         return false;
     }
     if (msg.value(MSG::Type).toInt(-1) == TYPE_RESPONSE) {
         if (msg.contains(MSG::ReqMeta) == false) {
-            qInfo() << "response msg has no meta";
+            qInfo() << "[MessageManager::checkIncomingMessage]"
+                    << "response msg has no meta";
             return false;
         }
         auto reqId = msg.value(MSG::ReqMeta).toObject().value(MSG::ID).toInt(0);
         if (reqId <= 0) {
-            qInfo() << "reqMsg of incoming msg is invalid with id;" << reqId;
+            qInfo() << "[MessageManager::checkIncomingMessage]"
+                    << "reqMsg of incoming msg is invalid with id;" << reqId;
             return false;
         }
     }
