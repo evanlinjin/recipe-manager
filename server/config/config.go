@@ -14,8 +14,8 @@ const (
 
 const (
 	//DefaultDomain      = "recipemanager.io"
-	DefaultPort        = "8081"
-	DefaultMongo       = "mongodb://127.0.0.1:32017"
+	DefaultPort  = "8081"
+	DefaultMongo = "mongodb://127.0.0.1:32017"
 	//DefaultSSLCertPath = "/etc/letsencrypt/live/recipemanager.io/fullchain.pem"
 	//DefaultSSLKeyPath  = "/etc/letsencrypt/live/recipemanager.io/privkey.pem"
 	//TempSSLCertPath    = "temp_cert.pem"
@@ -24,8 +24,8 @@ const (
 
 type NetworkConfig struct {
 	//Domain      string `json:"domain"`
-	Port        string `json:"port"`
-	Mongo       string `json:"mongo"`
+	Port  string `json:"port"`
+	Mongo string `json:"mongo"`
 	//SSLCertPath string `json:"ssl_cert_path"`
 	//SSLKeyPath  string `json:"ssl_key_path"`
 }
@@ -38,8 +38,8 @@ func GetNetworkConfig() (*NetworkConfig, error) {
 	if _, e := ioutil.ReadFile(networkConfigRoot); e != nil {
 		c := NetworkConfig{
 			//Domain:      DefaultDomain,
-			Port:        DefaultPort,
-			Mongo:       DefaultMongo,
+			Port:  DefaultPort,
+			Mongo: DefaultMongo,
 			//SSLCertPath: DefaultSSLCertPath,
 			//SSLKeyPath:  DefaultSSLKeyPath,
 		}

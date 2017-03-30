@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/evanlinjin/recipe-manager/server/talkrelay"
 	"github.com/gorilla/websocket"
 	"github.com/kabukky/httpscerts"
-	"github.com/evanlinjin/recipe-manager/server/talkrelay"
 )
 
 func main() {
@@ -54,7 +54,7 @@ func makeHandler(upgrader *websocket.Upgrader, talkGroup *talkrelay.TalkGroup) f
 			for {
 				select {
 				case m := <-msgChan:
-					wsm.WriteMessage([]byte(m))
+					wsm.DeprecatedWriteMessage([]byte(m))
 				case <-quitChan:
 					return
 				}
@@ -62,7 +62,7 @@ func makeHandler(upgrader *websocket.Upgrader, talkGroup *talkrelay.TalkGroup) f
 		}()
 
 		for {
-			data, e := wsm.ReadMessage()
+			data, e := wsm.DeprecatedReadMessage()
 			if e != nil {
 				fmt.Println(e)
 

@@ -3,13 +3,13 @@ package talkrelay
 import (
 	"encoding/base64"
 
-	"fmt"
-	"crypto/aes"
-	"io"
-	"crypto/rand"
-	"crypto/cipher"
-	"sync"
 	"bytes"
+	"crypto/aes"
+	"crypto/cipher"
+	"crypto/rand"
+	"fmt"
+	"io"
+	"sync"
 )
 
 const DefSize = aes.BlockSize
@@ -38,7 +38,7 @@ func (r *Encryptor) makeKey() ([]byte, error) {
 func (r *Encryptor) setKey(encKey []byte) (e error) {
 	r.Lock()
 	defer r.Unlock()
-	key , e := base64.RawURLEncoding.DecodeString(string(encKey))
+	key, e := base64.RawURLEncoding.DecodeString(string(encKey))
 	if e != nil {
 		return
 	}
@@ -94,7 +94,7 @@ func (r *Encryptor) Decrypt(encodedCipher []byte) (plainText []byte, e error) {
 	iv, cipherText := cipherText[:DefSize], cipherText[DefSize:]
 
 	// Check if satisfies block size.
-	if len(cipherText) % DefSize != 0 {
+	if len(cipherText)%DefSize != 0 {
 		e = fmt.Errorf("cipherText should be multiple of %v, got %v",
 			DefSize, len(cipherText))
 		return

@@ -1,11 +1,11 @@
 package talkrelay
 
 import (
-	"encoding/json"
-	"encoding/base64"
+	"bytes"
 	"crypto/hmac"
 	"crypto/sha256"
-	"bytes"
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 )
 
