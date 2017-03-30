@@ -105,5 +105,34 @@ void WebSocketConnection::onReceived(QString data) {
         return;
     }
     emit msgRecieved(msg);
+    process(msg);
 }
 
+void WebSocketConnection::process(const QJsonObject &obj) {
+    MSG::Message msg = MSG::obj_to_struct(obj);
+
+    if (msg.cmd == "handshake") {
+        ps_handshake(msg);
+    }
+}
+
+bool WebSocketConnection::ps_handshake(const MSG::Message &msg) {
+    if (msg.typ != TYPE_REQUEST) {
+        m_ws.close(QWebSocketProtocol::CloseCodeWrongDatatype,
+                   "handshake is not request type");
+        return false;
+    }
+    if (msg.data.isString() == false) {
+        m_ws.close(QWebSocketProtocol::CloseCodeWrongDatatype,
+                   "data does not contain string key");
+        return false;
+    }
+    auto obj = sendResponseMessage(MSG::struct_to_obj(msg), true);
+    if (obj == nullptr) {
+        qDebug() << "[WebSocketConnection::ps_handshake]"
+                 << "Failed to create response; got nullptr.";
+        return false;
+    }
+    m_enc->setKey(msg.data.toString().toLatin1());
+    return true;
+}

@@ -1,22 +1,43 @@
 #ifndef MESSAGEMANAGER_H
 #define MESSAGEMANAGER_H
 
+#include <array>
+
 #include <QObject>
 #include <QJsonValue>
 #include <QJsonObject>
 #include <QDateTime>
 #include <QDebug>
 
-namespace Message
-{
-    const char Command[] = "cmd";
-    const char Type[] = "type";
-    const char Data[] = "data";
-    const char Meta[] = "meta";
-    const char ReqMeta[] = "req";
+#define TYPE_REQUEST 0
+#define TYPE_RESPONSE 1
 
-    const char ID[] = "id";
-    const char Timestamp[] = "ts";
+namespace MSG
+{
+const char Command[] = "cmd";
+const char Type[] = "typ";
+const char Data[] = "data";
+const char Meta[] = "meta";
+const char ReqMeta[] = "req";
+
+const char ID[] = "id";
+const char Timestamp[] = "ts";
+
+struct MessageMeta {
+    int id;
+    int ts;
+};
+
+struct Message {
+    QString cmd;
+    int typ;
+    QJsonValue data;
+    MessageMeta* meta;
+    MessageMeta* req;
+};
+
+Message obj_to_struct(const QJsonObject &obj);
+QJsonObject struct_to_obj(const Message &msg);
 }
 
 class MessageManager : public QObject
@@ -25,8 +46,7 @@ class MessageManager : public QObject
 public:
     explicit MessageManager(QObject *parent = 0);
 
-    const int TYPE_REQUEST = 0;
-    const int TYPE_RESPONSE = 1;
+
 
     QJsonObject* makeRequestMessage(const QString &cmd, const QJsonValue &data);
     QJsonObject* makeResponseMessage(const QJsonObject &reqMsg, const QJsonValue &data);

@@ -30,6 +30,9 @@ private:
     MessageManager* m_msgs;
 
     void send(QJsonObject &obj);
+    void process(const QJsonObject &obj);
+
+    bool ps_handshake(const MSG::Message &msg);
 
     QTimer *m_timer, *m_checker;
     bool m_connected, m_gotPong;
@@ -57,7 +60,9 @@ private slots:
         m_ws.ignoreSslErrors();
     }
 
-    void onPong() {qDebug() << "PONG";}
+    void onPong() {
+//        qDebug() << "PONG";
+    }
 
 public slots:
     void open(QString v) {m_ws.open(QUrl(v));}

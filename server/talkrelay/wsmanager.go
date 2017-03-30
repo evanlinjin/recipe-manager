@@ -47,6 +47,7 @@ func (m *WSManager) Handshake(wait time.Duration) (e error) {
 		res, _ := m.GetMessage()
 		select {
 		case resChan <- res:
+			fmt.Println("GOT:", res)
 		default:
 		}
 	}()

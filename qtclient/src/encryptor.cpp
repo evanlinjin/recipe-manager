@@ -82,11 +82,16 @@ QByteArray Encryptor::decrypt(QByteArray data) {
 }
 
 void Encryptor::setKey(const QByteArray &encKey) {
+    qDebug() << "[Encryptor::setKey] GOT KEY:" << encKey;
     QByteArray key = QByteArray::fromBase64(
                 encKey, QByteArray::Base64UrlEncoding | QByteArray::OmitTrailingEquals);
+    key = QByteArray::fromBase64(
+                key, QByteArray::Base64UrlEncoding | QByteArray::OmitTrailingEquals);
 
     if (key.length() != DEF_SIZE) {
-        qDebug() << "Invalid key length";
+        qDebug() << "[Encryptor::setKey] Invalid key length."
+                 << "GOT:" << key.length()
+                 << "EXPECTED:" << DEF_SIZE;
     }
 
     const char* c = key.constData();
