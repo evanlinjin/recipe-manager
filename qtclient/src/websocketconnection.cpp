@@ -50,8 +50,7 @@ void WebSocketConnection::onMsg(QString msg) {
     auto package = m_enc->decrypt(encPackage);
 
     // Vertify Data with Signature.
-    QJsonObject obj = Package::ReadPackage(package, signature);
-    emit msgRecieved(obj["msg"].toString());
+    emit msgRecieved(Package::ReadPackage(package, signature));
 }
 
 void WebSocketConnection::onPong(quint64 i, QByteArray a) {
@@ -66,13 +65,11 @@ void WebSocketConnection::close() {
     m_ws.close();
 }
 
-void WebSocketConnection::sendMsg(QString v) {
+void WebSocketConnection::sendMsg(QJsonObject &obj) {
     // Make random Signature.
     auto signature = m_enc->makeKey();
 
     // Make Data into Package with Signature.
-    QJsonObject obj;
-    obj["msg"] = v;
     auto package = Package::MakePackage(obj, signature);
 
     // Encrypt Data and Signature.

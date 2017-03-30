@@ -26,7 +26,7 @@ private:
 
 signals:
     void connectedChanged();
-    void msgRecieved(QString);
+    void msgRecieved(QJsonObject);
 
 private slots:
     void onConnected();
@@ -40,7 +40,7 @@ private slots:
 public slots:
     void open(QString v);
     void close();
-    void sendMsg(QString v);
+    void sendMsg(QJsonObject &obj);
     void sendPing(QString v);
 };
 

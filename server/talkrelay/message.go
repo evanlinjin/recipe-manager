@@ -18,7 +18,7 @@ type MessageMeta struct {
 
 type Message struct {
 	Command string       `json:"cmd"`
-	Type    int64        `json:"cmd"`
+	Type    int64        `json:"typ"`
 	Data    interface{}  `json:"data,omitempty"`
 	Meta    *MessageMeta `json:"meta"`
 	ReqMeta *MessageMeta `json:"req,omitempty"`
@@ -30,7 +30,7 @@ type MessageManager struct {
 	incomingID int64
 }
 
-func MakeMessageList() MessageManager {
+func MakeMessageManager() MessageManager {
 	return MessageManager{
 		outgoingID: 0,
 		incomingID: 0,
@@ -61,7 +61,8 @@ func (m *MessageManager) MakeResponseMessage(reqMsg *Message, data interface{}) 
 		e = fmt.Errorf("reqMsg.Meta is nil")
 		return
 	} else if reqMsg.Meta.ID < 1 {
-		e = fmt.Errorf("reqMsg.Meta.ID is < 1, at &v", reqMsg.Meta.ID)
+		e = fmt.Errorf("reqMsg.Meta.ID is < 1, at %v", reqMsg.Meta.ID)
+		return
 	}
 	m.Lock()
 	m.outgoingID -= 1

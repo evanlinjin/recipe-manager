@@ -69,16 +69,17 @@ ApplicationWindow {
             Layout.fillWidth: true
             clip: true
 
-            delegate: ItemDelegate{text: msg}
+            delegate: ItemDelegate{text: model.data}
             model: ListModel {
                 id: msgsModel
             }
+            ScrollBar.vertical: ScrollBar{}
         }
     }
 
     Component.onCompleted: {
-        WS.onMsgRecieved.connect(function(msg){
-            msgsModel.append({msg: msg})
+        WS.onMsgRecieved.connect(function(obj){
+            msgsModel.append(obj)
             msgsView.positionViewAtEnd()
         })
     }

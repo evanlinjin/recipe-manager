@@ -25,7 +25,7 @@ type WSManager struct {
 func MakeWSManager(upgrader *websocket.Upgrader, w http.ResponseWriter, r *http.Request) (wsm *WSManager, e error) {
 	wsm = &WSManager{}
 	wsm.enc = MakeEncryptor()
-	wsm.msgs = MakeMessageList()
+	wsm.msgs = MakeMessageManager()
 	wsm.conn, e = upgrader.Upgrade(w, r, nil)
 	return
 }

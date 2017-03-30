@@ -54,7 +54,8 @@ func makeHandler(upgrader *websocket.Upgrader, talkGroup *talkrelay.TalkGroup) f
 			for {
 				select {
 				case m := <-msgChan:
-					wsm.DeprecatedWriteMessage([]byte(m))
+					//wsm.DeprecatedWriteMessage([]byte(m))
+					wsm.SendRequestMessage("unspecified", m)
 				case <-quitChan:
 					return
 				}
