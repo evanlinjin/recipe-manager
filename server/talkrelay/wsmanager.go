@@ -42,12 +42,14 @@ func (m *WSManager) Handshake(wait time.Duration) (e error) {
 	key, _ := m.enc.makeKey()
 	fmt.Println("Genereated key:", string(key))
 
-	var resChan = make(chan *Message, 5)
+	var resChan = make(chan *Message)
 
 	go func() {
 		res, _ := m.GetMessage()
-		resChan <- res
-		fmt.Println("GOT:", res)
+		select {
+		case resChan <- res:
+		default:
+		}
 	}()
 
 	req, _ := m.SendRequestMessage("handshake", key)
