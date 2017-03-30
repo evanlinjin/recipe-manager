@@ -6,6 +6,7 @@
 #include <QDebug>
 #include <QString>
 #include <QStringList>
+#include <QTimer>
 
 #include "package.h"
 #include "encryptor.h"
@@ -20,35 +21,47 @@ public:
 
     bool connected() const {return m_connected;}
 
-    bool sendRequestMessage(const QString &cmd, const QJsonValue &data);
-    bool sendResponseMessage(const QJsonObject &reqMsg, const QJsonValue &data);
+    QJsonObject *sendRequestMessage(const QString &cmd, const QJsonValue &data);
+    QJsonObject *sendResponseMessage(const QJsonObject &reqMsg, const QJsonValue &data);
 
 private:
     QWebSocket m_ws;
     Encryptor* m_enc;
     MessageManager* m_msgs;
-    bool m_connected;
 
     void send(QJsonObject &obj);
+
+    QTimer *m_timer, *m_checker;
+    bool m_connected, m_gotPong;
+    const int TIMER_INTERVAL_MS = 10 * 1000;
+    const int CHECKER_INTERVAL_MS = 5 * 1000;
 
 signals:
     void connectedChanged();
     void msgRecieved(QJsonObject);
+    void networkError();
 
 private slots:
     void onConnected();
     void onDisconnected();
     void onReceived(QString data);
-    void onPong(quint64, QByteArray);
 
-    void onError(QAbstractSocket::SocketError);
-    void onSslErrors(const QList<QSslError> &errors);
+    void onError(QAbstractSocket::SocketError e) {
+        qErrnoWarning(e, "[WebSocketConnection] Error:");
+    }
+
+    void onSslErrors(const QList<QSslError> &errors) {
+        foreach(QSslError e, errors) {
+            qInfo() << "[WebSocketConnection] SSL Error:" << e.errorString();
+        }
+        m_ws.ignoreSslErrors();
+    }
+
+    void onPong() {qDebug() << "PONG";}
 
 public slots:
-    void open(QString v);
-    void close();
-
-    void sendPing(QString v);
+    void open(QString v) {m_ws.open(QUrl(v));}
+    void close() {m_ws.close();}
 };
 
 #endif // WEBSOCKETCONNECTION_H

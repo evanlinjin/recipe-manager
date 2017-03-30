@@ -1,13 +1,23 @@
 #include "websocketconnection.h"
 
-WebSocketConnection::WebSocketConnection(QObject *parent) : QObject(parent) {
-    m_connected = false;
+WebSocketConnection::WebSocketConnection(QObject *parent) :
+    QObject(parent), m_connected(false) {
 
-    connect(&m_ws, SIGNAL(connected()),
-            this, SLOT(onConnected()));
+    m_enc = new Encryptor(this);
+    m_msgs = new MessageManager(this);
 
-    connect(&m_ws, SIGNAL(disconnected()),
-            this, SLOT(onDisconnected()));
+    m_timer = new QTimer(this);
+    connect(m_timer, SIGNAL(timeout()), &m_ws, SLOT(ping()));
+
+    m_checker = new QTimer(this);
+    m_checker->setSingleShot(true);
+    connect(&m_ws, SIGNAL(pong(quint64,QByteArray)), m_checker, SLOT(stop()));
+    connect(m_checker, SIGNAL(timeout()), this, SIGNAL(networkError()));
+
+    connect(&m_ws, SIGNAL(connected()), this, SLOT(onConnected()));
+    connect(&m_ws, SIGNAL(disconnected()), this, SLOT(onDisconnected()));
+
+    connect(&m_ws, SIGNAL(pong(quint64,QByteArray)), this, SLOT(onPong()));
 
     connect(&m_ws, SIGNAL(textMessageReceived(QString)),
             this, SLOT(onReceived(QString)));
@@ -15,32 +25,27 @@ WebSocketConnection::WebSocketConnection(QObject *parent) : QObject(parent) {
     connect(&m_ws, SIGNAL(error(QAbstractSocket::SocketError)),
             this, SLOT(onError(QAbstractSocket::SocketError)));
 
-    connect(&m_ws, SIGNAL(pong(quint64,QByteArray)),
-            this, SLOT(onPong(quint64,QByteArray)));
-
     typedef void (QWebSocket:: *sslErrorsSignal)(const QList<QSslError> &);
     connect(&m_ws, static_cast<sslErrorsSignal>(&QWebSocket::sslErrors),
             this, &WebSocketConnection::onSslErrors);
-    m_enc = new Encryptor(this);
-    m_msgs = new MessageManager(this);
 }
 
-bool WebSocketConnection::sendRequestMessage(const QString &cmd, const QJsonValue &data) {
+QJsonObject *WebSocketConnection::sendRequestMessage(const QString &cmd, const QJsonValue &data) {
     auto msg = m_msgs->makeRequestMessage(cmd, data);
     if (msg == nullptr) {
-        return false;
+        return msg;
     }
     send(*msg);
-    return true;
+    return msg;
 }
 
-bool WebSocketConnection::sendResponseMessage(const QJsonObject &reqMsg, const QJsonValue &data) {
+QJsonObject *WebSocketConnection::sendResponseMessage(const QJsonObject &reqMsg, const QJsonValue &data) {
     auto msg = m_msgs->makeResponseMessage(reqMsg, data);
     if (msg == nullptr) {
-        return false;
+        return msg;
     }
     send(*msg);
-    return true;
+    return msg;
 }
 
 void WebSocketConnection::send(QJsonObject &obj) {
@@ -66,13 +71,14 @@ void WebSocketConnection::send(QJsonObject &obj) {
 void WebSocketConnection::onConnected() {
     m_connected = true;
     emit connectedChanged();
-
+    m_timer->start(TIMER_INTERVAL_MS);
 }
 
 void WebSocketConnection::onDisconnected() {
     m_connected = false;
     emit connectedChanged();
     m_msgs->resetIds();
+    m_timer->stop();
 }
 
 void WebSocketConnection::onReceived(QString data) {
@@ -101,30 +107,3 @@ void WebSocketConnection::onReceived(QString data) {
     emit msgRecieved(msg);
 }
 
-void WebSocketConnection::onPong(quint64 i, QByteArray a) {
-    qInfo() << "I got a pong message: [" << i << "] [" << a << "]";
-}
-
-void WebSocketConnection::open(QString v) {
-    m_ws.open(QUrl(v));
-}
-
-void WebSocketConnection::close() {
-    m_ws.close();
-}
-
-void WebSocketConnection::sendPing(QString v) {
-    m_ws.ping(v.toLatin1());
-}
-
-void WebSocketConnection::onError(QAbstractSocket::SocketError e) {
-    qErrnoWarning(e, "[WebSocketConnection] Error:");
-}
-
-void WebSocketConnection::onSslErrors(const QList<QSslError> &errors) {
-    Q_UNUSED(errors);
-    foreach(QSslError e, errors) {
-        qInfo() << "[WebSocketConnection] SSL Error:" << e.errorString();
-    }
-    m_ws.ignoreSslErrors();
-}

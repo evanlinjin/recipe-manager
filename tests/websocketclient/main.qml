@@ -82,6 +82,9 @@ ApplicationWindow {
             msgsModel.append(obj)
             msgsView.positionViewAtEnd()
         })
+        WS.onNetworkError.connect(function(){
+            console.log("NETWORK ERROR!!!!")
+        })
     }
 
     function sendMsg() {

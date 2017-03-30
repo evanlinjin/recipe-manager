@@ -38,7 +38,7 @@ func makeHandler(upgrader *websocket.Upgrader, talkGroup *talkrelay.TalkGroup) f
 			fmt.Println(e)
 			return
 		}
-		if e := wsm.Handshake(time.Second * 3); e != nil {
+		if e := wsm.Handshake(time.Second * 200); e != nil {
 			fmt.Println(e)
 			return
 		}

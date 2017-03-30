@@ -57,8 +57,6 @@ func (m *WSManager) Handshake(wait time.Duration) (e error) {
 		select {
 		case <-timer.C:
 			e = fmt.Errorf("handshake failed, timeout")
-			fmt.Println("timer dome.")
-			timer.Stop()
 			goto DoneHandShake
 
 		case res := <-resChan:
