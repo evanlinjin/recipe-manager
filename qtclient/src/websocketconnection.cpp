@@ -52,6 +52,7 @@ void WebSocketConnection::send(QJsonObject &obj) {
     qInfo() << "[WebSocketConnection::send] (plain)" << obj;
     // Make random Signature.
     auto signature = m_enc->makeKey();
+//    auto signature = Package::MakeRandomBytes(16);
 
     // Make Data into Package with Signature.
     auto package = Package::MakePackage(obj, signature);

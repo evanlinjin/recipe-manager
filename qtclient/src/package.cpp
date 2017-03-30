@@ -43,14 +43,3 @@ QJsonObject Package::ReadPackage(const QByteArray &data, const QByteArray &key) 
 
     return QJsonDocument::fromJson(out).object();
 }
-
-const QByteArray Package::MakeRandomBytes(const int &size) {
-    byte randBytes[size];
-    CryptoPP::AutoSeededRandomPool rnd;
-    rnd.GenerateBlock(randBytes, size);
-
-    QByteArray data(size, Qt::Uninitialized);
-    for(int i = 0; i < size; i++)
-        data[i] = (char)randBytes[i];
-    return data;
-}

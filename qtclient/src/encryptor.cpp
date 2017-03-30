@@ -101,11 +101,13 @@ void Encryptor::setKey(const QByteArray &encKey) {
 }
 
 QByteArray Encryptor::makeKey() {
-    QByteArray key;
-    key.reserve(DEF_SIZE);
-
+    byte randBytes[DEF_SIZE];
     CryptoPP::AutoSeededRandomPool rnd;
-    rnd.GenerateBlock((byte*)key.data(), DEF_SIZE);
+    rnd.GenerateBlock(randBytes, DEF_SIZE);
+
+    QByteArray key(DEF_SIZE, Qt::Uninitialized);
+    for(int i = 0; i < DEF_SIZE; i++)
+        key[i] = (char)randBytes[i];
 
     return key.toBase64(QByteArray::Base64UrlEncoding | QByteArray::OmitTrailingEquals);
 }
