@@ -2,11 +2,12 @@ package talkrelay
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"github.com/gorilla/websocket"
 	"net/http"
 	"sync"
-	"encoding/json"
+	"time"
 )
 
 type Msg struct {
@@ -21,73 +22,92 @@ type WSManager struct {
 
 	readMux  sync.RWMutex
 	writeMux sync.Mutex
+
+	QuitChan chan bool
 }
 
-func MakeWSManager(upgrader *websocket.Upgrader, w http.ResponseWriter, r *http.Request) (wsm *WSManager, e error) {
-	wsm = &WSManager{}
+func MakeWSManager(upgrader *websocket.Upgrader, w http.ResponseWriter, r *http.Request) (wsm WSManager, e error) {
+	wsm = WSManager{}
 	wsm.enc = MakeEncryptor()
 	wsm.msgs = MakeMessageManager()
 	wsm.conn, e = upgrader.Upgrade(w, r, nil)
+	if e != nil {
+		return
+	}
+	wsm.QuitChan = make(chan bool)
 	return
 }
 
-func (m *WSManager) DeprecatedWriteMessage(data []byte) error {
-	// Make random Signature.
-	sig, _ := m.enc.makeKey()
+func (m *WSManager) Handshake(wait time.Duration) (e error) {
+	key, _ := m.enc.makeKey()
 
-	// Make Data into Package with Signature.
-	pkg, _ := MakePackage(Msg{string(data)}, sig)
+	var resChan = make(chan *Message)
 
-	// Encrypt Data and Signature.
-	encSig, _ := m.enc.Encrypt(sig)
-	encPkg, _ := m.enc.Encrypt(pkg)
+	go func() {
+		res, _ := m.GetMessage()
+		select {
+		case resChan <- res:
+		default:
+		}
+	}()
 
-	// Join with dot.
-	out := append(encSig, byte('.'))
-	out = append(out, encPkg...)
+	req, _ := m.SendRequestMessage("handshake", key)
+	timer := time.NewTimer(wait)
+	for {
+		select {
+		case <-timer.C:
+			e = fmt.Errorf("handshake failed, timeout")
+			fmt.Println("timer dome.")
+			timer.Stop()
+			goto DoneHandShake
 
-	m.writeMux.Lock()
-	defer m.writeMux.Unlock()
-	return m.conn.WriteMessage(websocket.TextMessage, out)
+		case res := <-resChan:
+			timer.Stop()
+			switch {
+			case res == nil, res.Meta == nil, res.ReqMeta == nil:
+				break
+			case res.Type != _TypeResponse, res.Command != "handshake":
+				break
+			case res.ReqMeta.Timestamp != req.Meta.Timestamp:
+				break
+			case res.ReqMeta.ID != req.Meta.ID:
+				break
+			default:
+				m.enc.setKey(key)
+				return nil
+			}
+			e = fmt.Errorf("handshake failed, invalid response")
+			goto DoneHandShake
+		}
+	}
+DoneHandShake:
+	m.Close(-1, e.Error())
+	return e
 }
 
-func (m *WSManager) DeprecatedReadMessage() (data []byte, e error) {
-	m.readMux.Lock()
-	_, msg, e := m.conn.ReadMessage()
-	m.readMux.Unlock()
-
-	// Split message into signature and data.
-	split := bytes.Split(msg, []byte("."))
-	if len(split) != 2 {
-		e = fmt.Errorf("expected %v parts, got %v from %v", 2, len(split), string(msg))
-		return
+func (m *WSManager) Close(code int, msg string) {
+	for {
+		select {
+		case m.QuitChan <- false:
+		default:
+			goto DoneQuitChan
+		}
 	}
 
-	// Decrypt signature and package.
-	sig, e := m.enc.Decrypt(split[0])
-	if e != nil {
-		e = fmt.Errorf("while decrypting signature, %v", e)
-		return
+DoneQuitChan:
+	if m.conn != nil {
+		type Msg struct {
+			Code int    `json:"code"`
+			Msg  string `json:"msg"`
+		}
+		m.SendRequestMessage("close", Msg{code, msg})
+		m.conn.Close()
 	}
-	pkg, e := m.enc.Decrypt(split[1])
-	if e != nil {
-		e = fmt.Errorf("while decrypting package, %v", e)
-		return
-	}
-
-	// Vertify data with signature.
-	var txt Msg
-	e = ReadPackage(pkg, sig, &txt)
-	if e != nil {
-		return
-	}
-	data = []byte(txt.Msg)
-	return
 }
 
-func (m *WSManager) SendRequestMessage(cmd string, data interface{}) error {
+func (m *WSManager) SendRequestMessage(cmd string, data interface{}) (*Message, error) {
 	msg := m.msgs.MakeRequestMessage(&cmd, data)
-	return m.sendMessage(msg)
+	return msg, m.sendMessage(msg)
 }
 
 func (m *WSManager) SendResposneMessage(reqMsg *Message, data interface{}) error {
@@ -102,17 +122,13 @@ func (m *WSManager) sendMessage(msg *Message) error {
 	if msg == nil {
 		return nil
 	}
-
 	// Make random Signature.
 	sig, _ := m.enc.makeKey()
-
 	// Put Message into Package with Signature.
 	pkg, _ := MakePackage(msg, sig)
-
 	// Encrypt Data and Signature.
 	encSig, _ := m.enc.Encrypt(sig)
 	encPkg, _ := m.enc.Encrypt(pkg)
-
 	// Join with dot.
 	out := append(encSig, byte('.'))
 	out = append(out, encPkg...)
@@ -124,8 +140,19 @@ func (m *WSManager) sendMessage(msg *Message) error {
 
 func (m *WSManager) GetMessage() (msg *Message, e error) {
 	m.readMux.Lock()
-	_, encPkg, e := m.conn.ReadMessage()
+	typ, encPkg, e := m.conn.ReadMessage()
 	m.readMux.Unlock()
+
+	// Check type of ws msg.
+	switch typ {
+	case websocket.CloseMessage, -1:
+		return
+	case websocket.TextMessage:
+		break
+	default:
+		e = fmt.Errorf("unexpected message type", typ)
+		return
+	}
 
 	// Split message into signature and data.
 	split := bytes.Split(encPkg, []byte("."))
@@ -133,7 +160,6 @@ func (m *WSManager) GetMessage() (msg *Message, e error) {
 		e = fmt.Errorf("expected %v parts, got %v from %v", 2, len(split), string(encPkg))
 		return
 	}
-
 	// Decrypt signature and package.
 	sig, e := m.enc.Decrypt(split[0])
 	if e != nil {
@@ -145,7 +171,6 @@ func (m *WSManager) GetMessage() (msg *Message, e error) {
 		e = fmt.Errorf("while decrypting package, %v", e)
 		return
 	}
-
 	// Vertify data with signature.
 	msg = &Message{}
 	e = ReadPackage(pkg, sig, msg)

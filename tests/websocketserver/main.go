@@ -7,6 +7,7 @@ import (
 	"github.com/evanlinjin/recipe-manager/server/talkrelay"
 	"github.com/gorilla/websocket"
 	"github.com/kabukky/httpscerts"
+	"time"
 )
 
 func main() {
@@ -37,15 +38,20 @@ func makeHandler(upgrader *websocket.Upgrader, talkGroup *talkrelay.TalkGroup) f
 			fmt.Println(e)
 			return
 		}
+		if e := wsm.Handshake(time.Second * 3); e != nil {
+			fmt.Println(e)
+			return
+		}
 
 		fmt.Println("Connection established with", r.RemoteAddr)
 		defer fmt.Println("Connection with", r.RemoteAddr, "closed")
 
-		quitChan := make(chan int)
-		defer func() { quitChan <- 1 }()
+		//quitChan := make(chan int)
+		//defer func() { quitChan <- 1 }()
 
 		msgChan, e := talkGroup.AddChef(r.RemoteAddr)
 		if e != nil {
+			wsm.Close(-1, e.Error())
 			return
 		}
 		defer talkGroup.RmChef(r.RemoteAddr)
@@ -54,22 +60,25 @@ func makeHandler(upgrader *websocket.Upgrader, talkGroup *talkrelay.TalkGroup) f
 			for {
 				select {
 				case m := <-msgChan:
-					//wsm.DeprecatedWriteMessage([]byte(m))
 					wsm.SendRequestMessage("unspecified", m)
-				case <-quitChan:
+				case <-wsm.QuitChan:
 					return
 				}
 			}
 		}()
 
 		for {
-			//data, e := wsm.DeprecatedReadMessage()
 			msg, e := wsm.GetMessage()
 			if e != nil {
 				fmt.Println(e)
+				wsm.Close(-1, e.Error())
 				return
+			}
+			if msg == nil {
+				break
 			}
 			go talkGroup.Talk(fmt.Sprintf("%s", msg.Data))
 		}
+		wsm.Close(0, "")
 	}
 }

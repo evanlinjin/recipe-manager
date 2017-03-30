@@ -29,7 +29,7 @@ private:
     MessageManager* m_msgs;
     bool m_connected;
 
-    void sendMsg(QJsonObject &obj);
+    void send(QJsonObject &obj);
 
 signals:
     void connectedChanged();
@@ -38,7 +38,7 @@ signals:
 private slots:
     void onConnected();
     void onDisconnected();
-    void onMsg(QString data);
+    void onReceived(QString data);
     void onPong(quint64, QByteArray);
 
     void onError(QAbstractSocket::SocketError);

@@ -10,7 +10,7 @@ WebSocketConnection::WebSocketConnection(QObject *parent) : QObject(parent) {
             this, SLOT(onDisconnected()));
 
     connect(&m_ws, SIGNAL(textMessageReceived(QString)),
-            this, SLOT(onMsg(QString)));
+            this, SLOT(onReceived(QString)));
 
     connect(&m_ws, SIGNAL(error(QAbstractSocket::SocketError)),
             this, SLOT(onError(QAbstractSocket::SocketError)));
@@ -30,7 +30,7 @@ bool WebSocketConnection::sendRequestMessage(const QString &cmd, const QJsonValu
     if (msg == nullptr) {
         return false;
     }
-    sendMsg(*msg);
+    send(*msg);
     return true;
 }
 
@@ -39,11 +39,12 @@ bool WebSocketConnection::sendResponseMessage(const QJsonObject &reqMsg, const Q
     if (msg == nullptr) {
         return false;
     }
-    sendMsg(*msg);
+    send(*msg);
     return true;
 }
 
-void WebSocketConnection::sendMsg(QJsonObject &obj) {
+void WebSocketConnection::send(QJsonObject &obj) {
+    qInfo() << "[WebSocketConnection::send] (plain)" << obj;
     // Make random Signature.
     auto signature = m_enc->makeKey();
 
@@ -58,21 +59,25 @@ void WebSocketConnection::sendMsg(QJsonObject &obj) {
     QByteArray out;
     out.append(encSignature).append('.').append(encPackage);
 
-    qDebug() << "SENDING:" << QString::fromLatin1(out);
+    qInfo() << "[WebSocketConnection::send] (ciphr)" << out;
     m_ws.sendTextMessage(QString::fromLatin1(out));
 }
 
 void WebSocketConnection::onConnected() {
     m_connected = true;
     emit connectedChanged();
+
 }
 
 void WebSocketConnection::onDisconnected() {
     m_connected = false;
     emit connectedChanged();
+    m_msgs->resetIds();
 }
 
-void WebSocketConnection::onMsg(QString data) {
+void WebSocketConnection::onReceived(QString data) {
+    qInfo() << "[WebSocketConnection::onReceived] (ciphr)" << data;
+
     // Split msg into Signature and Data.
     QStringList split = data.split('.', QString::SkipEmptyParts);
     if (split.length() != 2) {
@@ -89,6 +94,7 @@ void WebSocketConnection::onMsg(QString data) {
 
     // Vertify Data with Signature.
     auto msg = Package::ReadPackage(package, signature);
+    qInfo() << "[WebSocketConnection::onReceived] (plain)" << msg;
     if (m_msgs->checkIncomingMessage(msg) == false) {
         return;
     }

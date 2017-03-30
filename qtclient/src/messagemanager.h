@@ -32,6 +32,8 @@ public:
     QJsonObject* makeResponseMessage(const QJsonObject &reqMsg, const QJsonValue &data);
     bool checkIncomingMessage(QJsonObject &msg);
 
+    void resetIds() {outgoingId = incomingId = 0;}
+
 private:
     int outgoingId;
     int incomingId;

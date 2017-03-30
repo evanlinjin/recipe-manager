@@ -85,7 +85,6 @@ ApplicationWindow {
     }
 
     function sendMsg() {
-//        WS.sendMsg(msgField.text)
         Messenger.sendMsg(msgField.text)
         msgField.text = ""
         msgField.forceActiveFocus()
