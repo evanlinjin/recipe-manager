@@ -4,31 +4,37 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/evanlinjin/recipe-manager/server/chefs"
 	"github.com/evanlinjin/recipe-manager/server/conn"
 	"github.com/gorilla/websocket"
 	"github.com/kabukky/httpscerts"
+	//"os"
 	"time"
 )
 
 func main() {
-
 	if httpscerts.Check("cert.pem", "key.pem") != nil {
 		httpscerts.Generate("cert.pem", "key.pem", "localhost")
 	}
 
-	var (
-		upg = websocket.Upgrader{
-			ReadBufferSize:  1024,
-			WriteBufferSize: 1024,
-		}
-		talkGroup = conn.MakeTalkGroup()
-	)
+	upg := websocket.Upgrader{
+		ReadBufferSize:  1024,
+		WriteBufferSize: 1024,
+	}
+
+	talkGroup := conn.MakeTalkGroup()
+
+	chefsDB, e := chefs.MakeChefsDB()
+	e = chefsDB.Initiate()
+	if e != nil {
+		panic(e)
+	}
+
+	http.HandleFunc("/action/", chefs.MakeActivationEndpoint(&chefsDB))
 
 	http.HandleFunc("/", makeHandler(&upg, &talkGroup))
 
-	if e := http.ListenAndServeTLS(":8182", "cert.pem", "key.pem", nil); e != nil {
-		panic(e)
-	}
+	http.ListenAndServe(":8080", nil)
 }
 
 func makeHandler(upgrader *websocket.Upgrader, talkGroup *conn.TalkGroup) func(http.ResponseWriter, *http.Request) {

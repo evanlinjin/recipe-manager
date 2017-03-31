@@ -9,9 +9,9 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	"golang.org/x/crypto/bcrypt"
 	"math/rand"
-	"time"
-	"strings"
 	"strconv"
+	"strings"
+	"time"
 )
 
 const (
@@ -95,7 +95,7 @@ func (c *ChefsDB) AddChef(email, pwd string) error {
 	}
 
 	// Generate account activation key.
-	actKey := GetRand32Str()+GetRand32Str()
+	actKey := GetRand32Str() + GetRand32Str()
 	actKeySalt := GetRand32Str()
 	actKeyHash, e := bcrypt.GenerateFromPassword([]byte(actKey+actKeySalt), 10)
 	if e != nil {
@@ -204,9 +204,11 @@ func (c *ChefsDB) ActivateChef(escapedURLPath string) error {
 			return &ErrInternal{e}
 		}
 	case "deactivate":
-		_, e := c.db.Exec("DELETE FROM chefs WHERE id = ?", id)
+		_, e := c.db.Exec(
+			"DELETE FROM chefs WHERE id = ? AND verified = ?", id, false,
+		)
 		if e != nil {
-			return &ErrInternal{e}
+			return &ErrInvalidActivationMethod{e.Error()}
 		}
 	}
 

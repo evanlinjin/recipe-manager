@@ -1,8 +1,8 @@
 package chefs
 
 import (
-	"testing"
 	"os"
+	"testing"
 )
 
 func TestMakeChefsDB(t *testing.T) {
@@ -55,5 +55,5 @@ func TestChefsDB_AddChef(t *testing.T) {
 	if e != nil {
 		t.Error(e)
 	}
-	os.Remove("chefs")
+	//os.Remove("chefs")
 }

@@ -1,11 +1,8 @@
 {
-	"new_key_request": {
-		"cmd": "new_key",
-		"typ": "request",
-		"data": "this_is_a_sample_key",
-		"meta": {
-			"ts": 01234456,
-			"req_id": 1212
-		}
-	}
+	"handshake": "secure_key",
+
+	"new_chef": {
+      "email": "evan.linjin@gmail.com",
+      "password": "secure_password"
+    }
 }
