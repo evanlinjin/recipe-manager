@@ -10,6 +10,8 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"math/rand"
 	"time"
+	"strings"
+	"strconv"
 )
 
 const (
@@ -74,16 +76,17 @@ func (c *ChefsDB) Initiate() error {
 func (c *ChefsDB) AddChef(email, pwd string) error {
 	c.Lock()
 	defer c.Unlock()
+	email = strings.TrimSpace(email)
 
 	// Check if chef already exists with specified email.
-	verified := false
-	c.db.QueryRow(
-		"SELECT verified FROM chefs WHERE email = ?").Scan(&verified)
-	if verified == true {
+	scannedEmail := ""
+	c.db.QueryRow("SELECT email FROM chefs WHERE email = ?", email).
+		Scan(&scannedEmail)
+	if scannedEmail == email {
 		return &ErrChefAlreadyExists{email}
 	}
 
-	// Generate id, pwd_salt and pwd_hash.
+	// Generate chef id, pwd_salt and pwd_hash.
 	id := GetRandUniqID()
 	pwdSalt := GetRand32Str()
 	pwdHash, e := bcrypt.GenerateFromPassword([]byte(pwd+pwdSalt), 10)
@@ -91,17 +94,124 @@ func (c *ChefsDB) AddChef(email, pwd string) error {
 		return &ErrInternal{e}
 	}
 
-	// TODO: Send confirmation email, and check email validity.
-	e = SendMail(email, "Create Account", "Testing yoyoyoy!")
+	// Generate account activation key.
+	actKey := GetRand32Str()+GetRand32Str()
+	actKeySalt := GetRand32Str()
+	actKeyHash, e := bcrypt.GenerateFromPassword([]byte(actKey+actKeySalt), 10)
 	if e != nil {
-		return e
+		return &ErrInternal{e}
+	}
+
+	// Generate account activation and deactivation URLs.
+	actPart := actKey + "." + strconv.FormatInt(id, 10) + "." + "activate"
+	actURL := ActivationURLTemplate +
+		base64.RawURLEncoding.EncodeToString([]byte(actPart))
+
+	deaPart := actKey + "." + strconv.FormatInt(id, 10) + "." + "deactivate"
+	deaURL := ActivationURLTemplate +
+		base64.RawURLEncoding.EncodeToString([]byte(deaPart))
+
+	// The activation and deactivation URLs are generated as follows:
+	// The key is joined with a 'stringed' chef id, and the word 'activate' or
+	// activating, or 'deactivate' for deactivating. These 3 elements are
+	// separated with dots.
+	// e.g. "veryRandomKeyGoesHere.12345678901234567890.activate"
+	// The result is then base64 encoded and appended to the url:
+	// "https://recipemanager.io/action/base64EncodedGoodnessGoesHere".
+
+	e = SendMail(email,
+		"Create Account",
+		fmt.Sprintf(NewAccountMessage, actURL, deaURL),
+	)
+	if e != nil {
+		return &ErrInvalidEmail{email}
 	}
 
 	// Add Chef to DB.
 	_, e = c.db.Exec(
-		"INSERT INTO chefs(id,email,pwd_salt,pwd_hash) VALUES (?,?,?,?)",
+		"INSERT INTO chefs(id,email,pwd_salt,pwd_hash) VALUES(?,?,?,?)",
 		id, email, pwdSalt, pwdHash,
 	)
+	if e != nil {
+		return &ErrInternal{e}
+	}
+
+	// Add Chef activation method.
+	_, e = c.db.Exec(
+		"INSERT OR REPLACE INTO verifications(id,key_salt,key_hash) VALUES(?,?,?)",
+		id, actKeySalt, actKeyHash,
+	)
+	if e != nil {
+		return &ErrInternal{e}
+	}
+	return nil
+}
+
+func (c *ChefsDB) ActivateChef(escapedURLPath string) error {
+	decoded, e := base64.RawURLEncoding.DecodeString(escapedURLPath)
+	if e != nil {
+		return e
+	}
+
+	// Split escaped path to 3 parts.
+	parts := strings.Split(string(decoded), ".")
+	if len(parts) != 3 {
+		return &ErrInvalidActivationMethod{
+			fmt.Sprintf(
+				"got %v parts for escaped path, expected %v",
+				len(parts), 3,
+			),
+		}
+	}
+
+	// Obtain activation key, chef id and action.
+	key := parts[0]
+	id, e := strconv.ParseInt(parts[1], 10, 64)
+	if e != nil {
+		return &ErrInvalidActivationMethod{
+			fmt.Sprintf(
+				"unable to parse chefID %v because %v",
+				parts[1], e,
+			),
+		}
+	}
+	action := parts[2]
+
+	// Check with database.
+	keySalt, keyHash := "", ""
+	e = c.db.QueryRow(
+		"SELECT key_salt,key_hash FROM verifications WHERE id = ?", id,
+	).Scan(&keySalt, &keyHash)
+	if e != nil {
+		return &ErrInvalidActivationMethod{e.Error()}
+	}
+
+	// Check activation key.
+	e = bcrypt.CompareHashAndPassword([]byte(keyHash), []byte(key+keySalt))
+	if e != nil {
+		return &ErrInvalidActivationMethod{
+			fmt.Sprintf("invalid key: %v", e),
+		}
+	}
+
+	// Verify/Delete chef based on the specified action.
+	switch action {
+	case "activate":
+		_, e := c.db.Exec(
+			"UPDATE chefs SET verified = ? WHERE id = ?", true, id,
+		)
+		if e != nil {
+			return &ErrInternal{e}
+		}
+	case "deactivate":
+		_, e := c.db.Exec("DELETE FROM chefs WHERE id = ?", id)
+		if e != nil {
+			return &ErrInternal{e}
+		}
+	}
+
+	// Remove verification entry in db.
+	_, e = c.db.Exec("DELETE FROM verifications WHERE id = ?", id)
 	return e
 }
 

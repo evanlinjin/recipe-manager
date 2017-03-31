@@ -1,6 +1,9 @@
 package chefs
 
-import "testing"
+import (
+	"testing"
+	"os"
+)
 
 func TestMakeChefsDB(t *testing.T) {
 	chefs, e := MakeChefsDB()
@@ -35,6 +38,7 @@ func TestGetRandUniqID(t *testing.T) {
 }
 
 func TestChefsDB_AddChef(t *testing.T) {
+	os.Remove("chefs")
 	chefs, e := MakeChefsDB()
 	if e != nil {
 		t.Error(e)
@@ -51,4 +55,5 @@ func TestChefsDB_AddChef(t *testing.T) {
 	if e != nil {
 		t.Error(e)
 	}
+	os.Remove("chefs")
 }
