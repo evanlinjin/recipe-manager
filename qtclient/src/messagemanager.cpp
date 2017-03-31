@@ -57,7 +57,7 @@ bool MessageManager::checkIncomingMessage(QJsonObject &msg) {
                 << "msg has no meta";
         return false;
     }
-    const int id = msg.value(MSG::Meta).toObject().value(MSG::ID).toInt(0);
+    const qint64 id = msg.value(MSG::Meta).toObject().value(MSG::ID).toInt(0);
     if (id >= 0) {
         qInfo() << "[MessageManager::checkIncomingMessage] Error:"
                 << "incoming msg has +ve id;" << id;

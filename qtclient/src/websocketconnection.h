@@ -36,8 +36,8 @@ private:
 
     QTimer *m_timer, *m_checker;
     bool m_connected, m_gotPong;
-    const int TIMER_INTERVAL_MS = 10 * 1000;
-    const int CHECKER_INTERVAL_MS = 5 * 1000;
+    const qint64 TIMER_INTERVAL_MS = 10 * 1000;
+    const qint64 CHECKER_INTERVAL_MS = 5 * 1000;
 
 signals:
     void connectedChanged();

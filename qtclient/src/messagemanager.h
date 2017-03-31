@@ -24,13 +24,13 @@ const char ID[] = "id";
 const char Timestamp[] = "ts";
 
 struct MessageMeta {
-    int id;
-    int ts;
+    qint64 id;
+    qint64 ts;
 };
 
 struct Message {
     QString cmd;
-    int typ;
+    qint64 typ;
     QJsonValue data;
     MessageMeta* meta;
     MessageMeta* req;
@@ -55,8 +55,8 @@ public:
     void resetIds() {outgoingId = incomingId = 0;}
 
 private:
-    int outgoingId;
-    int incomingId;
+    qint64 outgoingId;
+    qint64 incomingId;
 
 signals:
 

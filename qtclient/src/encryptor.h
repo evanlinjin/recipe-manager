@@ -18,7 +18,7 @@ class Encryptor : public QObject
     Q_OBJECT
 public:
     explicit Encryptor(QObject *parent = 0);
-    static const int DEF_SIZE = 16;
+    static const qint64 DEF_SIZE = 16;
 
 private:
     byte m_key[16];

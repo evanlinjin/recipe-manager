@@ -14,12 +14,12 @@ QByteArray Encryptor::encrypt(QByteArray data) {
     // Get PlainText Data.
     char plainText[data.length()];
     const char* c = data.constData();
-    for (int i = 0; i < data.length(); i++) {
+    for (qint64 i = 0; i < data.length(); i++) {
         plainText[i] = c[i];
     }
 
     // Get Message Length.
-    int msgLen = (sizeof(plainText)/sizeof(*plainText));
+    qint64 msgLen = (sizeof(plainText)/sizeof(*plainText));
 
     // Make random iv.
     CryptoPP::AutoSeededRandomPool rnd;
@@ -53,17 +53,17 @@ QByteArray Encryptor::decrypt(QByteArray data) {
     }
 
     const char* c = rawData.constData();
-    const int msgLen = rawData.length() - DEF_SIZE;
+    const qint64 msgLen = rawData.length() - DEF_SIZE;
 
     // Get iv part.
     byte iv[DEF_SIZE];
-    for (int i = 0; i < DEF_SIZE; i++) {
+    for (qint64 i = 0; i < DEF_SIZE; i++) {
         iv[i] = (byte)c[i];
     }
 
     // Get cipher part.
     char cipherText[msgLen];
-    for (int i = 0; i < msgLen; i++) {
+    for (qint64 i = 0; i < msgLen; i++) {
         cipherText[i] = (byte)c[i+DEF_SIZE];
     }
 
@@ -95,7 +95,7 @@ void Encryptor::setKey(const QByteArray &encKey) {
     }
 
     const char* c = key.constData();
-    for (int i = 0; i < DEF_SIZE; i++) {
+    for (qint64 i = 0; i < DEF_SIZE; i++) {
         m_key[i] = (byte)c[i];
     }
 }
