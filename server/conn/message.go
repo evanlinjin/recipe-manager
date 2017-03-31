@@ -1,4 +1,4 @@
-package talkrelay
+package conn
 
 import (
 	"fmt"

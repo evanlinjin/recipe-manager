@@ -1,11 +1,11 @@
-package talkrelay
+package conn
 
 import "testing"
 
 func TestEncryptor_Encrypt(t *testing.T) {
 	enc := MakeEncryptor()
 
-	key, e := enc.MakeRandomKey()
+	key, e := enc.makeKey()
 	if e != nil {
 		t.Error(e)
 	}

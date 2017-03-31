@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/evanlinjin/recipe-manager/server/talkrelay"
+	"github.com/evanlinjin/recipe-manager/server/conn"
 	"github.com/gorilla/websocket"
 	"github.com/kabukky/httpscerts"
 	"time"
@@ -21,7 +21,7 @@ func main() {
 			ReadBufferSize:  1024,
 			WriteBufferSize: 1024,
 		}
-		talkGroup = talkrelay.MakeTalkGroup()
+		talkGroup = conn.MakeTalkGroup()
 	)
 
 	http.HandleFunc("/", makeHandler(&upg, &talkGroup))
@@ -31,9 +31,9 @@ func main() {
 	}
 }
 
-func makeHandler(upgrader *websocket.Upgrader, talkGroup *talkrelay.TalkGroup) func(http.ResponseWriter, *http.Request) {
+func makeHandler(upgrader *websocket.Upgrader, talkGroup *conn.TalkGroup) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		wsm, e := talkrelay.MakeWSManager(upgrader, w, r)
+		wsm, e := conn.MakeWSManager(upgrader, w, r)
 		if e != nil {
 			fmt.Println(e)
 			return
