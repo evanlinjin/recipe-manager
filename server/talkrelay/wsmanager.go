@@ -14,7 +14,10 @@ type Msg struct {
 	Msg string `json:"msg"`
 }
 
-// WSManager manages a WebSocket connection.
+// WSManager manages a WebSocket connection. ReadMux and writeMux are used to
+// ensure that writes and reads to the WebSocket connection on different
+// goroutines do not collide. QuitChan tells all the associated goroutines to
+// end.
 type WSManager struct {
 	conn *websocket.Conn
 	msgs MessageManager
@@ -26,6 +29,8 @@ type WSManager struct {
 	QuitChan chan bool
 }
 
+// MakeWSManager makes a new WSManager instance. It returns an error if it is
+// unable to upgrade the connection to WebSocket.
 func MakeWSManager(upgrader *websocket.Upgrader, w http.ResponseWriter, r *http.Request) (wsm WSManager, e error) {
 	wsm = WSManager{}
 	wsm.enc = MakeEncryptor()
@@ -38,6 +43,9 @@ func MakeWSManager(upgrader *websocket.Upgrader, w http.ResponseWriter, r *http.
 	return
 }
 
+// Handshake initiates a handshake between server and client.
+// TODO: Currently not really a handshake, but an "ugh, use this key" situation.
+// This procedure needs to be improved.
 func (m *WSManager) Handshake(wait time.Duration) (e error) {
 	key, _ := m.enc.makeKey()
 	fmt.Println("Genereated key:", string(key))
@@ -84,6 +92,8 @@ DoneHandShake:
 	return e
 }
 
+// Close closes the connected, and tell all associated listening/reading
+// goroutines to end, via the QuitChan channel.
 func (m *WSManager) Close(code int, msg string) {
 	for {
 		select {

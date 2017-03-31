@@ -9,7 +9,18 @@ import (
 	"fmt"
 )
 
-// MakePackage makes a package to send via websocket for client/server talk.
+// Packages, in Recipe Manager terms, is a encoded and signed message. This is
+// to, hopefully, ensure authenticity of messages transported between server and
+// client.
+//
+// TODO: Describe the package structure.
+//
+// Note that packages are to be encrypted with the Encryptor, and appended to an
+// encrypted signature key (used to sign the package). These two parts are
+// separated with a dot. The result is an encryptedPackage (or cipherPackage)
+// ready to be sent between server and client.
+
+// MakePackage makes a package with a given signature key.
 func MakePackage(obj interface{}, key []byte) (pac []byte, e error) {
 	key = bytes.TrimSpace(key)
 
@@ -29,7 +40,9 @@ func MakePackage(obj interface{}, key []byte) (pac []byte, e error) {
 	return
 }
 
-// ReadPackage reads a package.
+// ReadPackage reads a decoded package and checks it's authenticity with it's
+// decoded signature key. ReadPackage assumes that the message is in a json
+// format, and unmarshals the result to obj if package is verified.
 func ReadPackage(pac []byte, key []byte, obj interface{}) error {
 	fmt.Println("[ReadPackage] Pkg:", string(pac), ", Key:", string(key))
 	dot := bytes.Index(pac, []byte("."))
