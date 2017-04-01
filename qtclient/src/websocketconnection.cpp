@@ -1,23 +1,24 @@
 #include "websocketconnection.h"
 
 WebSocketConnection::WebSocketConnection(QObject *parent) :
-    QObject(parent), m_connected(false) {
+    QObject(parent), m_connectionStatus(1) {
 
     m_enc = new Encryptor(this);
     m_msgs = new MessageManager(this);
 
     m_timer = new QTimer(this);
-    connect(m_timer, SIGNAL(timeout()), &m_ws, SLOT(ping()));
+    connect(m_timer, SIGNAL(timeout()),
+            &m_ws, SLOT(ping()));
 
     m_checker = new QTimer(this);
     m_checker->setSingleShot(true);
-    connect(&m_ws, SIGNAL(pong(quint64,QByteArray)), m_checker, SLOT(stop()));
-    connect(m_checker, SIGNAL(timeout()), this, SIGNAL(networkError()));
+    connect(&m_ws, SIGNAL(pong(quint64,QByteArray)),
+            m_checker, SLOT(stop()));
+    connect(m_checker, SIGNAL(timeout()),
+            this, SIGNAL(networkError()));
 
-    connect(&m_ws, SIGNAL(connected()), this, SLOT(onConnected()));
-    connect(&m_ws, SIGNAL(disconnected()), this, SLOT(onDisconnected()));
-
-    connect(&m_ws, SIGNAL(pong(quint64,QByteArray)), this, SLOT(onPong()));
+    connect(&m_ws, SIGNAL(stateChanged(QAbstractSocket::SocketState)),
+            this, SLOT(onStateChanged(QAbstractSocket::SocketState)));
 
     connect(&m_ws, SIGNAL(textMessageReceived(QString)),
             this, SLOT(onReceived(QString)));
@@ -67,19 +68,22 @@ void WebSocketConnection::send(QJsonObject &obj) {
     m_ws.sendTextMessage(QString::fromLatin1(out));
 }
 
-void WebSocketConnection::onConnected() {
-//    m_enc->resetKey();
-    m_connected = true;
-    emit connectedChanged();
-    m_timer->start(TIMER_INTERVAL_MS);
-}
+void WebSocketConnection::onStateChanged(QAbstractSocket::SocketState state) {
+    switch (state) {
+    case QAbstractSocket::ConnectedState:
+        m_timer->start(TIMER_INTERVAL_MS);
 
-void WebSocketConnection::onDisconnected() {
-    m_enc->resetKey();
-    m_connected = false;
-    emit connectedChanged();
-    m_msgs->resetIds();
-    m_timer->stop();
+    case QAbstractSocket::UnconnectedState:
+        m_enc->resetKey();
+        m_msgs->resetIds();
+        m_timer->stop();
+
+    default:
+    {}
+    }
+    m_connectionStatus = state;
+    emit connectionStatusChanged();
+    qDebug() << "[WebSocketConnection::onStateChanged] State:" << state;
 }
 
 void WebSocketConnection::onReceived(QString data) {

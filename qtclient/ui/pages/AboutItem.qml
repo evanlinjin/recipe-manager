@@ -12,7 +12,7 @@ Item {
                 spacing: 40
                 Pane {
                     Layout.alignment: Layout.Center
-                    Material.elevation: 6
+                    Material.elevation: 10
                     Row {
                         spacing: 20
                         Image {

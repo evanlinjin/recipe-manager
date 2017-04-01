@@ -7,15 +7,20 @@ ToolBar {
     id: statusBar
     Material.elevation: 0
     Material.primary: Material.accent
+    height: 40
     RowLayout {
-        anchors.fill: parent
-        anchors.leftMargin: 10
-        anchors.rightMargin: 10
+        anchors.centerIn: parent
+        height: parent.height
         spacing: 10
 
-        Item {
-            Layout.fillWidth: true
+        BusyIndicator {
+            id: spinner
             Layout.fillHeight: true
+            Layout.minimumWidth: height
+            Layout.maximumWidth: height
+            height: 30
+            visible: false
+            Material.accent: "white"
         }
 
         Label {
@@ -23,6 +28,7 @@ ToolBar {
             Layout.fillHeight: true
             verticalAlignment: Text.AlignVCenter
             text: "disconnected."
+            font.bold: true
         }
 
         Button {
@@ -31,33 +37,29 @@ ToolBar {
             Material.elevation: 1
             Material.accent: Material.Orange
             text: "try again"
+            visible: false
             onClicked: WebSocket.open(wsUrl)
         }
 
-        BusyIndicator {
-            id: spinner
-            Layout.fillHeight: true
-            Layout.minimumWidth: height
-            Layout.maximumWidth: height
-            visible: false
-            Material.accent: "white"
-        }
+
     }
 
     states: [
         State {
             name: "disconnected"
-            when: WebSocket.connected === false
+            when: WebSocket.connectionStatus === 0
+            PropertyChanges {
+                target: button
+                visible: true
+            }
         },
         State {
             name: "connecting"
+            when: WebSocket.connectionStatus !== 0 &&
+                  WebSocket.connectionStatus !== 3
             PropertyChanges {
                 target: messageText
-                text: "connecting..."
-            }
-            PropertyChanges {
-                target: button
-                visible: false
+                text: "attempting to establish a connection..."
             }
             PropertyChanges {
                 target: spinner
@@ -67,10 +69,11 @@ ToolBar {
         },
         State {
             name: "connected"
-            when: WebSocket.connected === true
+            when: WebSocket.connectionStatus === 3
             PropertyChanges {
                 target: statusBar
                 height: 0
+                Material.primary: Material.color(Material.Green, Material.Shade600)
             }
             PropertyChanges {
                 target: messageText
@@ -80,6 +83,15 @@ ToolBar {
     ]
 
     Behavior on height {NumberAnimation{duration: 220}}
+
+    onStateChanged: switch(state) {
+                    case "connected":
+                        ToolTip.show("Connected!", 3000)
+                        break
+                    case "disconnected":
+                        ToolTip.show("Disconnected.", 3000)
+                        break
+                    }
 
     state: "connecting"
 }

@@ -41,7 +41,7 @@ Page {
         fillMode: Image.PreserveAspectCrop
         Rectangle {
             anchors.fill: parent
-            opacity: 0.9
+            opacity: 0.97
             color: Material.background
         }
     }
@@ -75,13 +75,13 @@ Page {
                         Layout.maximumWidth: parent.width/2
                         Layout.maximumHeight: width
                         opacity: enabled ? 1 : 0.3
-                        enabled: WebSocket.connected
+                        enabled: WebSocket.connectionStatus === 3
                     }
                     TextField {
                         id: emailField
                         placeholderText: "Email"
                         Layout.fillWidth: true
-                        enabled: WebSocket.connected
+                        enabled: WebSocket.connectionStatus === 3
                         inputMethodHints: Qt.ImhEmailCharactersOnly | Qt.ImhLowercaseOnly | Qt.ImhNoAutoUppercase
                         onAccepted: passwordField.forceActiveFocus()
                     }
@@ -89,7 +89,7 @@ Page {
                         id: passwordField
                         placeholderText: "Password"
                         Layout.fillWidth: true
-                        enabled: WebSocket.connected
+                        enabled: WebSocket.connectionStatus === 3
                         echoMode: TextInput.Password
                         onAccepted: {}
                     }
@@ -97,13 +97,14 @@ Page {
                         id: loginButton
                         Layout.fillWidth: true
                         text: "Login"
-                        enabled: WebSocket.connected
+                        enabled: WebSocket.connectionStatus === 3
                     }
                     Button {
                         Layout.fillWidth: true
-                        text: "Create Account"
+                        text: "Join Us!"
                         flat: true
-                        enabled: WebSocket.connected
+                        enabled: WebSocket.connectionStatus === 3
+                        onClicked: stack.push(createAccountItem)
                     }
                     Button {
                         Layout.fillWidth: true
@@ -171,6 +172,130 @@ Page {
                     }
                 }
             }
+        }
+    }
+
+    Component {
+        id: createAccountItem
+        Item {
+            Pane {
+                anchors.centerIn: parent
+                anchors.verticalCenterOffset: -30
+                width: parent.width > maxContainerWidth ?
+                           maxContainerWidth : parent.width
+                Layout.margins: 20
+                background: Item{}
+                ColumnLayout {
+                    id: container
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    Image {
+                        id: icon
+                        source: "qrc:/ui/icons/recipemanager.png"
+                        Layout.alignment: Layout.Center
+                        Layout.maximumWidth: 100
+                        Layout.maximumHeight: width
+                        opacity: enabled ? 1 : 0.3
+                        enabled: WebSocket.connectionStatus === 3
+                    }
+                    Label {
+                        Layout.fillWidth: true
+                        text: "New Account"
+                        font.capitalization: Font.AllUppercase
+                        font.bold: Font.Bold
+                        horizontalAlignment: Text.AlignHCenter
+                        enabled: WebSocket.connectionStatus === 3
+                    }
+                    Label {
+                        id: invalidEmail
+                        Layout.fillWidth: true
+                        horizontalAlignment: Text.AlignRight
+                        text: "invalid email"
+                        color: Material.color(Material.Red, Material.Shade600)
+                        visible: false
+                    }
+                    TextField {
+                        id: emailField
+                        placeholderText: "Email"
+                        Layout.fillWidth: true
+                        enabled: WebSocket.connectionStatus === 3
+                        inputMethodHints: Qt.ImhEmailCharactersOnly | Qt.ImhLowercaseOnly | Qt.ImhNoAutoUppercase
+                        onAccepted: passwordField.forceActiveFocus()
+                        onTextChanged: checkEmailValid()
+                    }
+                    Label {
+                        id: passwordTooShort
+                        Layout.fillWidth: true
+                        horizontalAlignment: Text.AlignRight
+                        text: "password too short"
+                        color: Material.color(Material.Red, Material.Shade600)
+                        visible: false
+                    }
+                    TextField {
+                        id: passwordField
+                        placeholderText: "Password"
+                        Layout.fillWidth: true
+                        enabled: WebSocket.connectionStatus === 3
+                        echoMode: TextInput.Password
+                        onAccepted: confirmPasswordField.forceActiveFocus()
+                        onTextChanged: checkPasswordLength()
+                    }
+                    Label {
+                        id: passwordsDontMatch
+                        Layout.fillWidth: true
+                        horizontalAlignment: Text.AlignRight
+                        text: "passwords don't match"
+                        color: Material.color(Material.Red, Material.Shade600)
+                        visible: false
+                    }
+                    TextField {
+                        id: confirmPasswordField
+                        placeholderText: "Confirm Password"
+                        Layout.fillWidth: true
+                        enabled: WebSocket.connectionStatus === 3
+                        echoMode: TextInput.Password
+                        onAccepted: {}
+                        onTextChanged: checkMatchingPasswords()
+                    }
+                    Button {
+                        id: submit
+                        text: "Submit"
+                        Layout.fillWidth: true
+                        enabled: false
+                    }
+                    Button {
+                        id: cancel
+                        text: "Cancel"
+                        Layout.fillWidth: true
+                        flat: true
+                        onClicked: stack.pop()
+                    }
+                }
+            }
+            function checkEmailValid() {
+                invalidEmail.visible =
+                        !/[^\s@]+@[^\s@]+\.[^\s@]+/.test(emailField.text)
+                checkOkaySubmit()
+            }
+            function checkPasswordLength() {
+                passwordTooShort.visible =
+                        passwordField.text.length < 6
+                checkOkaySubmit()
+            }
+            function checkMatchingPasswords() {
+                passwordsDontMatch.visible =
+                        passwordField.text !== confirmPasswordField.text
+                checkOkaySubmit()
+            }
+            function checkOkaySubmit() {
+                submit.enabled = !invalidEmail.visible &&
+                        !passwordTooShort.visible &&
+                        !passwordsDontMatch.visible &&
+                        emailField.text.length !== 0 &&
+                        passwordField.text.length !== 0 &&
+                        confirmPasswordField.text.length !== 0
+            }
+            Component.onCompleted: emailField.forceActiveFocus()
         }
     }
 

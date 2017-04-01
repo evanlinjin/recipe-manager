@@ -15,7 +15,7 @@ ApplicationWindow {
     title: qsTr("Recipe Manager")
 
     property int maxWidth: 1024
-    property string wsUrl: "ws://localhost:8080"
+    property string wsUrl: "ws://localhost:8080/ws"
 
     Loader {
         id: mainLoader
