@@ -44,7 +44,6 @@ func MakePackage(obj interface{}, key []byte) (pac []byte, e error) {
 // decoded signature key. ReadPackage assumes that the message is in a json
 // format, and unmarshals the result to obj if package is verified.
 func ReadPackage(pac []byte, key []byte, obj interface{}) error {
-	fmt.Println("[ReadPackage] Pkg:", string(pac), ", Key:", string(key))
 	dot := bytes.Index(pac, []byte("."))
 	if dot == -1 {
 		return fmt.Errorf("invalid package - dot at %v", dot)

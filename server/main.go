@@ -101,10 +101,12 @@ func MakeWebSocketEndpoint(g ObjectGroup) func(
 				case *conn.ErrUnexpectedMessage:
 					// Print error on unexpected message.
 					fmt.Sprintf("from %v, got %v", r.RemoteAddr, e)
+					return
 
 				default:
 					// Print error on undetermined error.
 					fmt.Sprintf("from %v, got %v", r.RemoteAddr, e)
+					return
 				}
 
 			} else {

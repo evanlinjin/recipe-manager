@@ -16,10 +16,6 @@ const (
 	//DefaultDomain      = "recipemanager.io"
 	DefaultPort  = "8081"
 	DefaultMongo = "mongodb://127.0.0.1:32017"
-	//DefaultSSLCertPath = "/etc/letsencrypt/live/recipemanager.io/fullchain.pem"
-	//DefaultSSLKeyPath  = "/etc/letsencrypt/live/recipemanager.io/privkey.pem"
-	//TempSSLCertPath    = "temp_cert.pem"
-	//TempSSLKeyPath     = "temp_key.pem"
 )
 
 type NetworkConfig struct {
