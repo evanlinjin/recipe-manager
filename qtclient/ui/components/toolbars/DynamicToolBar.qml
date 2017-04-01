@@ -7,6 +7,7 @@ ToolBar {
     id: toolBar
 
     property alias component: loader.sourceComponent
+    property int maxWidth: -1
 
     Material.elevation: 0
     height: 55
@@ -16,7 +17,8 @@ ToolBar {
         anchors.fill: parent
         Loader {
             id: loader
-//            Layout.maximumWidth: maxWidth
+            Layout.maximumWidth: toolBar.maxWidth === -1 ?
+                                     main.maxWidth : toolBar.maxWidth
             Layout.fillHeight: true
             Layout.fillWidth: true
             Layout.alignment: Layout.Center

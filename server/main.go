@@ -28,10 +28,12 @@ func MakeObjectGroup() (g ObjectGroup, e error) {
 		WriteBufferSize: 1024,
 	}
 
-	// TODO: Fix this very strange hack.
-	g.ChefsDB = &chefs.ChefsDB{}
-	*g.ChefsDB, e = chefs.MakeChefsDB()
-	// TODO: Fix this very strange hack.
+	cdb, e := chefs.MakeChefsDB(chefs.Config{
+		DomainName: "http://localhost:8080",
+		BotEmail: "noreply.recipemanager.io@gmail.com",
+		BotEmailPwd: "",
+	})
+	g.ChefsDB = &cdb
 
 	return
 }
@@ -43,7 +45,7 @@ func main() {
 	}
 
 	http.HandleFunc("/action/", chefs.MakeActivationEndpoint(g.ChefsDB))
-	http.HandleFunc("/ws/", MakeWebSocketEndpoint(g))
+	http.HandleFunc("/ws", MakeWebSocketEndpoint(g))
 	http.ListenAndServe(":8080", nil)
 }
 

@@ -8,24 +8,39 @@ import (
 	"fmt"
 	_ "github.com/mattn/go-sqlite3"
 	"golang.org/x/crypto/bcrypt"
-	"math/rand"
 	"strconv"
 	"strings"
-	"time"
+	"net/smtp"
+	"net/http"
 )
 
 const (
 	TableChefs         = "chefs"
 	TableVerifications = "verifications"
 	TableSessions      = "sessions"
+	ActivationEscURL = `/action/`
+
+	NewAccountMessage = `
+Hello fellow chef, welcome to Recipe Manager!
+
+To activate your account, click the following link:
+%s
+
+If you didn't create an account on Recipe Manager, click here:
+%s
+
+Kind Regards,
+
+Team @ Recipe Manager'`
 )
 
 type ChefsDB struct {
 	sync.Mutex
-	db *sql.DB
+	db     *sql.DB
+	config Config
 }
 
-func MakeChefsDB() (c ChefsDB, e error) {
+func MakeChefsDB(config Config) (c ChefsDB, e error) {
 	c.db, e = sql.Open("sqlite3", "chefs")
 	if e != nil {
 		return
@@ -104,11 +119,11 @@ func (c *ChefsDB) AddChef(email, pwd string) error {
 
 	// Generate account activation and deactivation URLs.
 	actPart := actKey + "." + strconv.FormatInt(id, 10) + "." + "activate"
-	actURL := ActivationURLTemplate +
+	actURL := c.config.DomainName + ActivationEscURL +
 		base64.RawURLEncoding.EncodeToString([]byte(actPart))
 
 	deaPart := actKey + "." + strconv.FormatInt(id, 10) + "." + "deactivate"
-	deaURL := ActivationURLTemplate +
+	deaURL := c.config.DomainName + ActivationEscURL +
 		base64.RawURLEncoding.EncodeToString([]byte(deaPart))
 
 	// The activation and deactivation URLs are generated as follows:
@@ -119,7 +134,7 @@ func (c *ChefsDB) AddChef(email, pwd string) error {
 	// The result is then base64 encoded and appended to the url:
 	// "https://recipemanager.io/action/base64EncodedGoodnessGoesHere".
 
-	e = SendMail(email,
+	e = c.SendMail(email,
 		"Create Account",
 		fmt.Sprintf(NewAccountMessage, actURL, deaURL),
 	)
@@ -147,6 +162,45 @@ func (c *ChefsDB) AddChef(email, pwd string) error {
 	return nil
 }
 
+// SendMail sends mail.
+func (c *ChefsDB) SendMail(to, subject, body string) error {
+	to = strings.TrimSpace(to)
+	from := c.config.BotEmail
+	pass := c.config.BotEmailPwd
+
+	msg := "From: " + from + "\n" +
+		"To: " + to + "\n" +
+		"Subject: " + subject + "\n\n" + body
+
+	return smtp.SendMail("smtp.gmail.com:587",
+		smtp.PlainAuth("", from, pass, "smtp.gmail.com"),
+		from, []string{to}, []byte(msg))
+}
+
+// MakeActivationEndpoint makes an activation endpoint function to serve using
+// http package. The endpoint is used for activating chef accounts and whatnot.
+func MakeActivationEndpoint(c *ChefsDB) func(
+	http.ResponseWriter, *http.Request) {
+
+	ep := func(w http.ResponseWriter, r *http.Request) {
+		path := r.URL.EscapedPath()
+		path = path[strings.LastIndex(path, "/")+1:]
+		fmt.Println(path)
+
+		if e := c.ActivateChef(path); e != nil {
+			fmt.Println(e)
+			http.ServeFile(w, r, "server/static/account-activation-fail.html")
+			return
+		}
+		http.ServeFile(w, r, "server/static/account-activation-success.html")
+	}
+	return ep
+}
+
+
+
+// ActivateChef checks escaped url and depending on the validity and data
+// contained, it performs appropriate actions.
 func (c *ChefsDB) ActivateChef(escapedURLPath string) error {
 	decoded, e := base64.RawURLEncoding.DecodeString(escapedURLPath)
 	if e != nil {
@@ -217,12 +271,3 @@ func (c *ChefsDB) ActivateChef(escapedURLPath string) error {
 	return e
 }
 
-func GetRandUniqID() int64 {
-	return rand.New(rand.NewSource(time.Now().UnixNano())).Int63()
-}
-
-func GetRand32Str() string {
-	b := make([]byte, ((3*32)/4)+1)
-	rand.New(rand.NewSource(time.Now().UnixNano())).Read(b)
-	return base64.RawURLEncoding.EncodeToString(b)[:32]
-}

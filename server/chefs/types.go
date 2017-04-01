@@ -2,6 +2,13 @@ package chefs
 
 import "time"
 
+// Config contains data to configure ChefsDB.
+type Config struct {
+	DomainName string
+	BotEmail string
+	BotEmailPwd string
+}
+
 type Chef struct {
 	ID       int64
 	Email    string

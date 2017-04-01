@@ -3,10 +3,9 @@
         <file>main.qml</file>
         <file>ui/pages/WelcomePage.qml</file>
         <file>ui/components/Fonts.qml</file>
-        <file>ui/components/RMTextField.qml</file>
-        <file>ui/components/RMButton.qml</file>
         <file>ui/components/toolbars/DynamicToolBar.qml</file>
         <file>ui/components/labels/HeaderLabel.qml</file>
         <file>ui/pages/AboutItem.qml</file>
+        <file>ui/StatusBar.qml</file>
     </qresource>
 </RCC>
