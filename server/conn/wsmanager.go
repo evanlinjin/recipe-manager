@@ -10,10 +10,6 @@ import (
 	"time"
 )
 
-type Msg struct {
-	Msg string `json:"msg"`
-}
-
 // WSManager manages a WebSocket connection. ReadMux and writeMux are used to
 // ensure that writes and reads to the WebSocket connection on different
 // goroutines do not collide. QuitChan tells all the associated goroutines to
@@ -73,7 +69,7 @@ func (m *WSManager) Handshake(wait time.Duration) (e error) {
 			switch {
 			case res == nil, res.Meta == nil, res.ReqMeta == nil:
 				break
-			case res.Type != _TypeResponse, res.Command != "handshake":
+			case res.Type != TypeResponse, res.Command != "handshake":
 				break
 			case res.ReqMeta.Timestamp != req.Meta.Timestamp:
 				break
@@ -114,20 +110,8 @@ DoneQuitChan:
 	}
 }
 
-func (m *WSManager) SendRequestMessage(cmd string, data interface{}) (*Message, error) {
-	msg := m.msgs.MakeRequestMessage(&cmd, data)
-	return msg, m.sendMessage(msg)
-}
-
-func (m *WSManager) SendResposneMessage(reqMsg *Message, data interface{}) error {
-	msg, e := m.msgs.MakeResponseMessage(reqMsg, data)
-	if e != nil {
-		return e
-	}
-	return m.sendMessage(msg)
-}
-
-func (m *WSManager) sendMessage(msg *Message) error {
+// SendMessage sends a message via WebSocket.
+func (m *WSManager) SendMessage(msg *Message) error {
 	if msg == nil {
 		return nil
 	}
@@ -147,19 +131,40 @@ func (m *WSManager) sendMessage(msg *Message) error {
 	return m.conn.WriteMessage(websocket.TextMessage, out)
 }
 
+// SendRequestMessage sends, specifically, a request message. This is a
+// convenience function.
+func (m *WSManager) SendRequestMessage(cmd string, data interface{}) (*Message, error) {
+	msg := m.msgs.MakeRequestMessage(&cmd, data)
+	return msg, m.SendMessage(msg)
+}
+
+// SendResponseMessage sends, specifically, a response message. This is a
+// convenience function.
+func (m *WSManager) SendResponseMessage(reqMsg *Message, data interface{}) error {
+	msg, e := m.msgs.MakeResponseMessage(reqMsg, data)
+	if e != nil {
+		return e
+	}
+	return m.SendMessage(msg)
+}
+
 func (m *WSManager) GetMessage() (msg *Message, e error) {
 	m.readMux.Lock()
 	typ, encPkg, e := m.conn.ReadMessage()
 	m.readMux.Unlock()
+	if e != nil {
+		return
+	}
 
 	// Check type of ws msg.
 	switch typ {
-	case websocket.CloseMessage, -1:
-		return
 	case websocket.TextMessage:
 		break
+	case websocket.CloseMessage, -1:
+		e = &ErrCloseMessage{typ}
+		return
 	default:
-		e = fmt.Errorf("unexpected message type", typ)
+		e = &ErrUnexpectedMessage{typ}
 		return
 	}
 

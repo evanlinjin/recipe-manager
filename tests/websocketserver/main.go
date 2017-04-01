@@ -38,7 +38,7 @@ func main() {
 }
 
 func makeHandler(upgrader *websocket.Upgrader, talkGroup *conn.TalkGroup) func(http.ResponseWriter, *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
+	wsep := func(w http.ResponseWriter, r *http.Request) {
 		wsm, e := conn.MakeWSManager(upgrader, w, r)
 		if e != nil {
 			fmt.Println(e)
@@ -51,9 +51,6 @@ func makeHandler(upgrader *websocket.Upgrader, talkGroup *conn.TalkGroup) func(h
 
 		fmt.Println("Connection established with", r.RemoteAddr)
 		defer fmt.Println("Connection with", r.RemoteAddr, "closed")
-
-		//quitChan := make(chan int)
-		//defer func() { quitChan <- 1 }()
 
 		msgChan, e := talkGroup.AddChef(r.RemoteAddr)
 		if e != nil {
@@ -87,4 +84,5 @@ func makeHandler(upgrader *websocket.Upgrader, talkGroup *conn.TalkGroup) func(h
 		}
 		wsm.Close(0, "")
 	}
+	return wsep
 }

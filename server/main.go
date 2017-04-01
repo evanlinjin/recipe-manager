@@ -1,107 +1,147 @@
 package main
 
 import (
-	"log"
+	"fmt"
+	"github.com/evanlinjin/recipe-manager/server/chefs"
+	"github.com/evanlinjin/recipe-manager/server/conn"
+	"github.com/gorilla/websocket"
 	"net/http"
-	"os"
 	"time"
-
-	"github.com/evanlinjin/recipe-manager/server/config"
+	"github.com/evanlinjin/recipe-manager/server/handle"
 )
 
-const (
-	_StaticIP   = "34.204.161.180"
-	_DomainName = "recipemanager.io"
-	_Port       = "8080"
-	_PortHTTP   = "80"
-)
+// ObjectGroup groups a bunch of objects together to convenient passing between
+// function. Note that members are all references.
+type ObjectGroup struct {
+	OutgoingMessages chan *conn.Message
+	Upgrader         *websocket.Upgrader
+	ChefsDB          *chefs.ChefsDB
+}
+
+// MakeObjectGroup makes a new instance of ObjectGroup.
+func MakeObjectGroup() (g ObjectGroup, e error) {
+
+	g.OutgoingMessages = make(chan *conn.Message)
+
+	g.Upgrader = &websocket.Upgrader{
+		ReadBufferSize:  1024,
+		WriteBufferSize: 1024,
+	}
+
+	// TODO: Fix this very strange hack.
+	g.ChefsDB = &chefs.ChefsDB{}
+	*g.ChefsDB, e = chefs.MakeChefsDB()
+	// TODO: Fix this very strange hack.
+
+	return
+}
 
 func main() {
-	// Get configuration.
-	c, e := config.GetNetworkConfig()
+	g, e := MakeObjectGroup()
 	if e != nil {
-		log.Fatal(e)
+		panic(e)
 	}
 
-	http.HandleFunc("/", MakeHander(c))
+	http.HandleFunc("/action/", chefs.MakeActivationEndpoint(g.ChefsDB))
+	http.HandleFunc("/ws/", MakeWebSocketEndpoint(g))
+	http.ListenAndServe(":8080", nil)
+}
 
-	// Listen and serve.
-	//log.Printf("Listening and serving on %s:%s ...", c.Domain, c.Port)
-	//e = http.ListenAndServeTLS(":"+c.Port, c.SSLCertPath, c.SSLKeyPath, nil)
-	if e = http.ListenAndServe(":"+c.Port, nil); e != nil {
-		log.Fatal(e)
+// MakeWebSocketEndpoint makes a WebSocket connection endpoint.
+func MakeWebSocketEndpoint(g ObjectGroup) func(
+	w http.ResponseWriter, r *http.Request) {
+
+	ep := func(w http.ResponseWriter, r *http.Request) {
+
+		// Initiate upgrade from HTTPS to WebSocket connection.
+		ws, e := conn.MakeWSManager(g.Upgrader, w, r)
+		if e != nil {
+			fmt.Println(e)
+			return
+		}
+
+		// Initiate handshake to agree on encryption key for custom protocol.
+		if e := ws.Handshake(time.Second * 3); e != nil {
+			fmt.Println(e)
+			return
+		}
+
+		// Some debug messages.
+		fmt.Println("Connection established with", r.RemoteAddr)
+		defer fmt.Println("Connection with", r.RemoteAddr, "closed")
+
+		// Handle outgoing messages.
+		go func() {
+			for {
+				select {
+				case m := <-g.OutgoingMessages:
+					ws.SendMessage(m)
+
+				case <-ws.QuitChan:
+					return
+				}
+			}
+		}()
+
+		// Handle incoming messages.
+		for {
+			m, e := ws.GetMessage()
+			if e != nil {
+
+				// Error switch.
+				switch e.(type) {
+
+				case *conn.ErrCloseMessage:
+					// Close connection on close message.
+					ws.Close(0, e.Error())
+					return
+
+				case *conn.ErrUnexpectedMessage:
+					// Print error on unexpected message.
+					fmt.Sprintf("from %v, got %v", r.RemoteAddr, e)
+
+				default:
+					// Print error on undetermined error.
+					fmt.Sprintf("from %v, got %v", r.RemoteAddr, e)
+				}
+
+			} else {
+
+				// Message switch.
+				switch m.Type {
+
+				case conn.TypeRequest:
+					// For request messages.
+
+					switch m.Command {
+					case "new_chef":
+						d, e := handle.GetNewChefData(m.Data)
+						if e != nil {
+							msg := fmt.Sprintf("invalid data structure: %v", e)
+							fmt.Printf("[%v] %v", r.RemoteAddr, msg)
+							ws.SendResponseMessage(m, msg)
+							break
+						}
+						if e := g.ChefsDB.AddChef(d.Email, d.Password); e != nil {
+							msg := fmt.Sprintf("invalid request: %v", e)
+							fmt.Printf("[%v] %v", r.RemoteAddr, msg)
+							ws.SendResponseMessage(m, msg)
+							break
+						}
+						msg := fmt.Sprintf("please check your email to activate your account for %v", d.Email)
+						fmt.Printf("[%v] %v", r.RemoteAddr, msg)
+						ws.SendResponseMessage(m, msg)
+					}
+
+				case conn.TypeResponse:
+					// For response messages.
+
+					switch m.Command {
+
+					}
+				}
+			}
+		}
 	}
-}
-
-// MakeHandler makes an http handler.
-func MakeHander(c *config.NetworkConfig) func(http.ResponseWriter, *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		// Redirect HTTP.
-		//if r.TLS == nil {
-		//	http.Redirect(w, r, "https://"+c.Domain, http.StatusMovedPermanently)
-		//	return
-		//}
-
-		w.Write([]byte("Hello World!"))
-		w.WriteHeader(http.StatusOK)
-		return
-	}
-}
-
-// Timestamp records a timestamp
-type Timestamp struct {
-	epoch int64
-}
-
-// NewTimestamp creates a new timestamp.
-func NewTimestamp() *Timestamp {
-	return &Timestamp{
-		epoch: time.Now().UnixNano(),
-	}
-}
-
-func handler(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("Hello World!"))
-	w.WriteHeader(http.StatusOK)
-	return
-	//if r.TLS == nil {
-	//	http.Redirect(w, r, "https://"+_DomainName, http.StatusMovedPermanently)
-	//	return
-	//}
-	//
-	//w.Header().Set("Content-Type", "text/html;charset=UTF-8")
-	//session, e := mgo.Dial("mongodb://127.0.0.1:32017")
-	//if e != nil {
-	//	w.Write([]byte(e.Error()))
-	//	w.WriteHeader(http.StatusInternalServerError)
-	//	return
-	//}
-	//defer session.Close()
-	//
-	//c := session.DB("test").C("timestaps")
-	//if e = c.Insert(NewTimestamp()); e != nil {
-	//	w.Write([]byte(e.Error()))
-	//	w.WriteHeader(http.StatusInternalServerError)
-	//	return
-	//}
-	//
-	//n, e := c.Count()
-	//if e != nil {
-	//	w.Write([]byte(e.Error()))
-	//	w.WriteHeader(http.StatusInternalServerError)
-	//	return
-	//}
-	//
-	//w.Write([]byte("Hello World! We have had " + strconv.Itoa(n) + " visits!"))
-	//w.WriteHeader(http.StatusOK)
-	//return
-}
-
-// GetPort returns the port number.
-func GetPort() string {
-	port := os.Getenv("PORT")
-	if port == "" {
-		log.Fatal("$PORT must be set")
-	}
-	return ":" + port
+	return ep
 }

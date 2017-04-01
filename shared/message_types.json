@@ -1,8 +1,13 @@
-{
-	"handshake": "secure_key",
-
-	"new_chef": {
-      "email": "evan.linjin@gmail.com",
-      "password": "secure_password"
+[
+  {
+    "cmd": "handshake",
+    "msg": "secure_key"
+  },
+  {
+    "cmd": "new_chef",
+    "msg": {
+      "email": "new.chef@test.com",
+      "password": "recipes_secured!"
     }
-}
+  }
+]

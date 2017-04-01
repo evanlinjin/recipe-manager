@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	_TypeRequest  = 0
-	_TypeResponse = 1
+	TypeRequest  = 0
+	TypeResponse = 1
 )
 
 type MessageMeta struct {
@@ -43,7 +43,7 @@ func (m *MessageManager) MakeRequestMessage(cmd *string, data interface{}) (msg 
 	m.Unlock()
 	msg = &Message{
 		Command: *cmd,
-		Type:    _TypeRequest,
+		Type:    TypeRequest,
 		Data:    data,
 		Meta: &MessageMeta{
 			ID:        m.outgoingID,
@@ -69,7 +69,7 @@ func (m *MessageManager) MakeResponseMessage(reqMsg *Message, data interface{}) 
 	m.Unlock()
 	msg = &Message{
 		Command: reqMsg.Command,
-		Type:    _TypeResponse,
+		Type:    TypeResponse,
 		Data:    data,
 		Meta: &MessageMeta{
 			ID:        m.outgoingID,
@@ -88,7 +88,7 @@ func (m *MessageManager) CheckIncomingMessage(msg *Message) error {
 		return fmt.Errorf("msg has nil meta")
 	case msg.Meta.ID < 0:
 		return fmt.Errorf("incoming msg has -ve id; %v", msg.Meta.ID)
-	case msg.Type == _TypeResponse:
+	case msg.Type == TypeResponse:
 		switch {
 		case msg.ReqMeta == nil:
 			return fmt.Errorf("response msg has nil reqMeta")
