@@ -23,7 +23,7 @@ ApplicationWindow {
             TextField {
                 id: urlField
                 Layout.fillWidth: true
-                text: "wss://localhost:8182"
+                text: "ws://localhost:8080"
                 enabled: !WS.connected
                 onAccepted: WS.connected ? closeCon() : openCon()
             }

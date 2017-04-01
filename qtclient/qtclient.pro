@@ -1,15 +1,20 @@
-QT += qml quick websockets
+QT += qml quick quickcontrols2 websockets
 
 CONFIG += c++11
 
 SOURCES += main.cpp \
-    src/websocketpackage.cpp \
-    src/QTinyAes/QTinyAes/qtinyaes.cpp \
-    src/QTinyAes/QTinyAes/tiny-AES128-C/aes.c \
-    src/packageencryptor.cpp \
+    src/encryptor.cpp \
+    src/messagemanager.cpp \
+    src/package.cpp \
     src/websocketconnection.cpp
 
-RESOURCES += qml.qrc
+RESOURCES += qml.qrc \
+    qtquickcontrols2.conf \
+    $$files(ui/icons/*.png) \
+    $$files(ui/backgrounds/*.png) \
+    $$files(ui/fonts/ubuntu/*.ttf)
+
+LIBS += -L/usr/lib/crypto++ -lcryptopp
 
 # Additional import path used to resolve QML modules in Qt Creator's code model
 QML_IMPORT_PATH =
@@ -34,8 +39,7 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
 HEADERS += \
-    src/websocketpackage.h \
-    src/QTinyAes/QTinyAes/tiny-AES128-C/aes.h \
-    src/QTinyAes/QTinyAes/qtinyaes.h \
-    src/packageencryptor.h \
+    src/encryptor.h \
+    src/messagemanager.h \
+    src/package.h \
     src/websocketconnection.h
