@@ -69,10 +69,8 @@ func (c *ChefsDB) AddChef(email, pwd string) error {
 	email = strings.TrimSpace(email)
 
 	// Check if chef already exists with specified email.
-	scannedEmail := ""
-	c.chefs.Find(bson.M{"email": email}).Select(bson.M{"email": 1}).
-		One(&scannedEmail)
-	if scannedEmail == email {
+	temp := Chef{}
+	if c.chefs.Find(bson.M{"email": email}).One(&temp) == nil {
 		return &ErrChefAlreadyExists{email}
 	}
 
@@ -171,42 +169,45 @@ func MakeActivationEndpoint(c *ChefsDB) func(
 		path = path[strings.LastIndex(path, "/")+1:]
 		fmt.Println(path)
 
-		if e := c.ActivateChef(path); e != nil {
+		page, e := c.ActivateChef(path)
+		if e != nil {
 			fmt.Println(e)
-			http.ServeFile(w, r, "server/static/account-activation-fail.html")
+			http.ServeFile(w, r, "server/static/no-action.html")
 			return
 		}
-		http.ServeFile(w, r, "server/static/account-activation-success.html")
+		http.ServeFile(w, r, "server/static/"+page+".html")
 	}
 	return ep
 }
 
 // ActivateChef checks escaped url and depending on the validity and data
 // contained, it performs appropriate actions.
-func (c *ChefsDB) ActivateChef(escapedURLPath string) error {
+func (c *ChefsDB) ActivateChef(escapedURLPath string) (page string, e error) {
 	decoded, e := base64.RawURLEncoding.DecodeString(escapedURLPath)
 	if e != nil {
-		return e
+		return
 	}
 
 	// Split escaped path to 3 parts.
 	parts := strings.Split(string(decoded), ".")
 	if len(parts) != 3 {
-		return &ErrInvalidActivationMethod{
+		e = &ErrInvalidActivationMethod{
 			fmt.Sprintf(
 				"got %v parts for escaped path, expected %v",
 				len(parts), 3,
 			),
 		}
+		return
 	}
 
 	// Obtain activation key, chef id and action.
 	key := parts[0]
 
 	if bson.IsObjectIdHex(parts[1]) == false {
-		return &ErrInvalidActivationMethod{
+		e = &ErrInvalidActivationMethod{
 			fmt.Sprintf("unable to parse chefID %v", parts[1]),
 		}
+		return
 	}
 	id := bson.ObjectIdHex(parts[1])
 	action := parts[2]
@@ -215,15 +216,17 @@ func (c *ChefsDB) ActivateChef(escapedURLPath string) error {
 	v := Verification{}
 	e = c.verts.FindId(id).One(&v)
 	if e != nil {
-		return &ErrInvalidActivationMethod{e.Error()}
+		e = &ErrInvalidActivationMethod{e.Error()}
+		return
 	}
 
 	// Check activation key.
 	e = bcrypt.CompareHashAndPassword([]byte(v.KeyHash), []byte(key+v.KeySalt))
 	if e != nil {
-		return &ErrInvalidActivationMethod{
+		e = &ErrInvalidActivationMethod{
 			fmt.Sprintf("invalid key: %v", e),
 		}
+		return
 	}
 
 	// Verify/Delete chef based on the specified action.
@@ -231,16 +234,18 @@ func (c *ChefsDB) ActivateChef(escapedURLPath string) error {
 	case "activate":
 		e := c.chefs.UpdateId(id, bson.M{"verified":true})
 		if e != nil {
-			return &ErrInternal{e}
+			return "", &ErrInternal{e}
 		}
+		page = "account-activated"
 	case "deactivate":
 		e := c.chefs.RemoveId(id)
 		if e != nil {
-			return &ErrInvalidActivationMethod{e.Error()}
+			return "", &ErrInvalidActivationMethod{e.Error()}
 		}
+		page = "account-deleted"
 	}
 
 	// Remove verification entry in db.
 	e = c.verts.RemoveId(id)
-	return e
+	return
 }
