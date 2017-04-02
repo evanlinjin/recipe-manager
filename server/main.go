@@ -32,7 +32,7 @@ func MakeObjectGroup() (g ObjectGroup, e error) {
 		DomainName:  "http://localhost:8080",
 		MongoUrls: "127.0.0.1:32017",
 		BotEmail:    "noreply.recipemanager.io@gmail.com",
-		BotEmailPwd: "rm4080XCDT",
+		BotEmailPwd: "",
 	})
 	g.ChefsDB = &cdb
 

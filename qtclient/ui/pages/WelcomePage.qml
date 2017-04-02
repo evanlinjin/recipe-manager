@@ -1,5 +1,5 @@
 import QtQuick 2.7
-import QtQuick.Controls 2.0
+import QtQuick.Controls 2.1
 import QtQuick.Layouts 1.0
 import QtQuick.Controls.Material 2.1
 import QtGraphicalEffects 1.0
@@ -179,6 +179,7 @@ Page {
         id: createAccountItem
         Item {
             Pane {
+                id: pane
                 anchors.centerIn: parent
                 anchors.verticalCenterOffset: -30
                 width: parent.width > maxContainerWidth ?
@@ -273,6 +274,25 @@ Page {
                     }
                 }
             }
+            BusyIndicator {
+                id: busySpinner
+                anchors.centerIn: parent
+                running: false
+            }
+            states: [
+                State {
+                    name: "processing"
+                    PropertyChanges {
+                        target: pane
+                        enabled: false
+                    }
+                    PropertyChanges {
+                        target: busySpinner
+                        running: true
+                    }
+                }
+            ]
+
             function checkEmailValid() {
                 invalidEmail.visible =
                         !/[^\s@]+@[^\s@]+\.[^\s@]+/.test(emailField.text)
@@ -297,23 +317,31 @@ Page {
                         confirmPasswordField.text.length !== 0
             }
 
-            property int outgoingReqId: -1
-
             function send() {
                 outgoingReqId = WebSocket.outgoing_newChef(emailField.text,
                                                            passwordField.text)
-            }
-            function response(reqId, txtMsg) {
-                if (reqId !== outgoingReqId)
-                    return;
-                console.log(txtMsg)
+                state = "processing"
             }
 
-            Component.onCompleted: {
-                WebSocket.onResponseTextMessage.connect(response)
-                emailField.forceActiveFocus()
-            }
+            Component.onCompleted: emailField.forceActiveFocus()
         }
+    }
+
+    Dialog {
+            id: msgDialog
+            x: (parent.width - width)/2
+            y: (parent.height - height)/2
+            parent: ApplicationWindow.overlay
+            title: ("Message")
+            modal: true
+            Label {
+                id: msgDialogBody
+                anchors.centerIn: parent
+                elide: Text.ElideRight
+                wrapMode: Text.Wrap
+                width: parent.width
+            }
+            standardButtons: Dialog.Ok
     }
 
     Component{id: aboutItem; AboutItem{}}
@@ -327,5 +355,19 @@ Page {
         horizontalAlignment: Text.AlignRight
         font.pixelSize: 10
     }
+
+    property int outgoingReqId: -1
+
+    function response(reqId, txtMsg) {
+        if (reqId !== outgoingReqId)
+            return;
+        console.log(txtMsg)
+        while (stack.depth > 1)
+            stack.pop()
+        msgDialogBody.text = txtMsg
+        msgDialog.open()
+    }
+
+    Component.onCompleted: WebSocket.onResponseTextMessage.connect(response)
 
 }
