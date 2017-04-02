@@ -1,24 +1,24 @@
 package chefs
 
 import (
-	"database/sql"
 	"sync"
 
 	"encoding/base64"
 	"fmt"
-	_ "github.com/mattn/go-sqlite3"
 	"golang.org/x/crypto/bcrypt"
-	"strconv"
-	"strings"
-	"net/smtp"
+	"gopkg.in/mgo.v2"
+	"gopkg.in/mgo.v2/bson"
 	"net/http"
+	"net/smtp"
+	"strings"
+	"time"
 )
 
 const (
 	TableChefs         = "chefs"
 	TableVerifications = "verifications"
 	TableSessions      = "sessions"
-	ActivationEscURL = `/action/`
+	ActivationEscURL   = `/action/`
 
 	NewAccountMessage = `
 Hello fellow chef, welcome to Recipe Manager!
@@ -36,56 +36,31 @@ Team @ Recipe Manager'`
 
 type ChefsDB struct {
 	sync.Mutex
-	db     *sql.DB
-	config Config
+	config  *Config
+	session *mgo.Session
+	chefs   *mgo.Collection
+	verts   *mgo.Collection
 }
 
-func MakeChefsDB(config Config) (c ChefsDB, e error) {
-	c.db, e = sql.Open("sqlite3", "chefs")
+func MakeChefsDB(config *Config) (c ChefsDB, e error) {
+	if config == nil {
+		e = fmt.Errorf("nil config")
+		return
+	}
+	c.config = config
+	c.session, e = mgo.Dial(config.MongoUrls)
 	if e != nil {
 		return
 	}
+	c.chefs = c.session.DB(DBAuth).C(CTChefs)
+	c.verts = c.session.DB(DBAuth).C(CTVerts)
 	return
 }
 
-func (c *ChefsDB) Close() error {
+func (c *ChefsDB) Close() {
 	c.Lock()
 	defer c.Unlock()
-	return c.db.Close()
-}
-
-func (c *ChefsDB) Initiate() error {
-	c.Lock()
-	defer c.Unlock()
-	cmd := `CREATE TABLE IF NOT EXISTS %s (
-	id       INTEGER PRIMARY KEY,
-	email    TEXT NOT NULL UNIQUE,
-	pwd_salt TEXT NOT NULL,
-	pwd_hash TEXT NOT NULL,
-	verified BOOL DEFAULT 0 NOT NULL,
-	created  TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL)`
-	if _, e := c.db.Exec(fmt.Sprintf(cmd, TableChefs)); e != nil {
-		return e
-	}
-	cmd = `CREATE TABLE IF NOT EXISTS %s (
-	id       INTEGER PRIMARY KEY,
-	key_salt TEXT NOT NULL,
-	key_hash TEXT NOT NULL,
-	created  TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL)`
-	if _, e := c.db.Exec(fmt.Sprintf(cmd, TableVerifications)); e != nil {
-		return e
-	}
-	cmd = `CREATE TABLE IF NOT EXISTS %s (
-	id        INTEGER PRIMARY KEY,
-	chef_id   INTEGER NOT NULL,
-	key_salt  TEXT NOT NULL,
-	key_hash  TEXT NOT NULL,
-	created   TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-	last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL)`
-	if _, e := c.db.Exec(fmt.Sprintf(cmd, TableSessions)); e != nil {
-		return e
-	}
-	return nil
+	c.session.Close()
 }
 
 func (c *ChefsDB) AddChef(email, pwd string) error {
@@ -95,14 +70,14 @@ func (c *ChefsDB) AddChef(email, pwd string) error {
 
 	// Check if chef already exists with specified email.
 	scannedEmail := ""
-	c.db.QueryRow("SELECT email FROM chefs WHERE email = ?", email).
-		Scan(&scannedEmail)
+	c.chefs.Find(bson.M{"email": email}).Select(bson.M{"email": 1}).
+		One(&scannedEmail)
 	if scannedEmail == email {
 		return &ErrChefAlreadyExists{email}
 	}
 
 	// Generate chef id, pwd_salt and pwd_hash.
-	id := GetRandUniqID()
+	id := bson.NewObjectId() // id is string.
 	pwdSalt := GetRand32Str()
 	pwdHash, e := bcrypt.GenerateFromPassword([]byte(pwd+pwdSalt), 10)
 	if e != nil {
@@ -118,11 +93,12 @@ func (c *ChefsDB) AddChef(email, pwd string) error {
 	}
 
 	// Generate account activation and deactivation URLs.
-	actPart := actKey + "." + strconv.FormatInt(id, 10) + "." + "activate"
+	// Note that "id.String()" generates a hex string.
+	actPart := actKey + "." + id.Hex() + "." + "activate"
 	actURL := c.config.DomainName + ActivationEscURL +
 		base64.RawURLEncoding.EncodeToString([]byte(actPart))
 
-	deaPart := actKey + "." + strconv.FormatInt(id, 10) + "." + "deactivate"
+	deaPart := actKey + "." + id.Hex() + "." + "deactivate"
 	deaURL := c.config.DomainName + ActivationEscURL +
 		base64.RawURLEncoding.EncodeToString([]byte(deaPart))
 
@@ -139,23 +115,30 @@ func (c *ChefsDB) AddChef(email, pwd string) error {
 		fmt.Sprintf(NewAccountMessage, actURL, deaURL),
 	)
 	if e != nil {
+		fmt.Println("[ChefsDB.AddChef]", e)
 		return &ErrInvalidEmail{email}
 	}
 
 	// Add Chef to DB.
-	_, e = c.db.Exec(
-		"INSERT INTO chefs(id,email,pwd_salt,pwd_hash) VALUES(?,?,?,?)",
-		id, email, pwdSalt, pwdHash,
-	)
+	e = c.chefs.Insert(Chef{
+		ID:       id,
+		Email:    email,
+		PwdSalt:  pwdSalt,
+		PwdHash:  string(pwdHash),
+		Verified: false,
+		Created:  time.Now(),
+	})
 	if e != nil {
 		return &ErrInternal{e}
 	}
 
 	// Add Chef activation method.
-	_, e = c.db.Exec(
-		"INSERT OR REPLACE INTO verifications(id,key_salt,key_hash) VALUES(?,?,?)",
-		id, actKeySalt, actKeyHash,
-	)
+	e = c.verts.Insert(Verification{
+		ID:      id,
+		KeySalt: actKeySalt,
+		KeyHash: string(actKeyHash),
+		Created: time.Now(),
+	})
 	if e != nil {
 		return &ErrInternal{e}
 	}
@@ -167,6 +150,7 @@ func (c *ChefsDB) SendMail(to, subject, body string) error {
 	to = strings.TrimSpace(to)
 	from := c.config.BotEmail
 	pass := c.config.BotEmailPwd
+	fmt.Println("[ChefsDB.SendMail]", from, pass)
 
 	msg := "From: " + from + "\n" +
 		"To: " + to + "\n" +
@@ -197,8 +181,6 @@ func MakeActivationEndpoint(c *ChefsDB) func(
 	return ep
 }
 
-
-
 // ActivateChef checks escaped url and depending on the validity and data
 // contained, it performs appropriate actions.
 func (c *ChefsDB) ActivateChef(escapedURLPath string) error {
@@ -220,28 +202,24 @@ func (c *ChefsDB) ActivateChef(escapedURLPath string) error {
 
 	// Obtain activation key, chef id and action.
 	key := parts[0]
-	id, e := strconv.ParseInt(parts[1], 10, 64)
-	if e != nil {
+
+	if bson.IsObjectIdHex(parts[1]) == false {
 		return &ErrInvalidActivationMethod{
-			fmt.Sprintf(
-				"unable to parse chefID %v because %v",
-				parts[1], e,
-			),
+			fmt.Sprintf("unable to parse chefID %v", parts[1]),
 		}
 	}
+	id := bson.ObjectIdHex(parts[1])
 	action := parts[2]
 
 	// Check with database.
-	keySalt, keyHash := "", ""
-	e = c.db.QueryRow(
-		"SELECT key_salt,key_hash FROM verifications WHERE id = ?", id,
-	).Scan(&keySalt, &keyHash)
+	v := Verification{}
+	e = c.verts.FindId(id).One(&v)
 	if e != nil {
 		return &ErrInvalidActivationMethod{e.Error()}
 	}
 
 	// Check activation key.
-	e = bcrypt.CompareHashAndPassword([]byte(keyHash), []byte(key+keySalt))
+	e = bcrypt.CompareHashAndPassword([]byte(v.KeyHash), []byte(key+v.KeySalt))
 	if e != nil {
 		return &ErrInvalidActivationMethod{
 			fmt.Sprintf("invalid key: %v", e),
@@ -251,23 +229,18 @@ func (c *ChefsDB) ActivateChef(escapedURLPath string) error {
 	// Verify/Delete chef based on the specified action.
 	switch action {
 	case "activate":
-		_, e := c.db.Exec(
-			"UPDATE chefs SET verified = ? WHERE id = ?", true, id,
-		)
+		e := c.chefs.UpdateId(id, bson.M{"verified":true})
 		if e != nil {
 			return &ErrInternal{e}
 		}
 	case "deactivate":
-		_, e := c.db.Exec(
-			"DELETE FROM chefs WHERE id = ? AND verified = ?", id, false,
-		)
+		e := c.chefs.RemoveId(id)
 		if e != nil {
 			return &ErrInvalidActivationMethod{e.Error()}
 		}
 	}
 
 	// Remove verification entry in db.
-	_, e = c.db.Exec("DELETE FROM verifications WHERE id = ?", id)
+	e = c.verts.RemoveId(id)
 	return e
 }
-

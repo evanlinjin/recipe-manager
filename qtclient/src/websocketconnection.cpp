@@ -115,11 +115,12 @@ void WebSocketConnection::onReceived(QString data) {
 void WebSocketConnection::process(const QJsonObject &obj) {
     MSG::Message msg = MSG::obj_to_struct(obj);
 
-    if (msg.cmd == "handshake") {
+    if (msg.cmd == "handshake")
         ps_handshake(msg);
-        return;
-    }
-    emit msgRecieved(obj);
+
+    if (msg.cmd == "new_chef")
+        ps_new_chef(msg);
+
 }
 
 bool WebSocketConnection::ps_handshake(const MSG::Message &msg) {
@@ -140,5 +141,18 @@ bool WebSocketConnection::ps_handshake(const MSG::Message &msg) {
         return false;
     }
     m_enc->setKey(msg.data.toString().toLatin1());
+    return true;
+}
+
+bool WebSocketConnection::ps_new_chef(const MSG::Message &msg) {
+    if (msg.typ != TYPE_RESPONSE)
+        qDebug() << "[ WebSocketConnection::ps_new_chef]"
+                 << "Got a request to create new chef from server? haha";
+
+    if (msg.data.isString() == false)
+        qDebug() << "[ WebSocketConnection::ps_new_chef]"
+                 << "Invalid response from server.";
+
+    emit responseTextMessage(msg.req->id, msg.data.toString());
     return true;
 }

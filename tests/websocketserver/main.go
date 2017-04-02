@@ -25,8 +25,8 @@ func main() {
 	talkGroup := conn.MakeTalkGroup()
 
 	chefsDB, e := chefs.MakeChefsDB(chefs.Config{
-		DomainName: "http://localhost:8080",
-		BotEmail: "noreply.recipemanager.io@gmail.com",
+		DomainName:  "http://localhost:8080",
+		BotEmail:    "noreply.recipemanager.io@gmail.com",
 		BotEmailPwd: "",
 	})
 	e = chefsDB.Initiate()

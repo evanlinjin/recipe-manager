@@ -1,32 +1,42 @@
 package chefs
 
-import "time"
+import (
+	"gopkg.in/mgo.v2/bson"
+	"time"
+)
+
+const (
+	DBAuth  = "auth"
+	CTChefs = "chefs"
+	CTVerts = "verifications"
+)
 
 // Config contains data to configure ChefsDB.
 type Config struct {
-	DomainName string
-	BotEmail string
+	DomainName  string
+	MongoUrls   string // separated by commas.
+	BotEmail    string
 	BotEmailPwd string
 }
 
 type Chef struct {
-	ID       int64
-	Email    string
-	PwdSalt  string
-	PwdHash  string
-	Verified bool
-	Created  time.Time
+	ID       bson.ObjectId `json:"id" bson:"_id,omitempty"`
+	Email    string        `json:"email"`
+	PwdSalt  string        `json:"pwd_salt"`
+	PwdHash  string        `json:"pwd_hash"`
+	Verified bool          `json:"vertified"`
+	Created  time.Time     `json:"created"`
 }
 
 type Verification struct {
-	ID      int64
-	KeySalt string
-	KeyHash string
-	Created time.Time
+	ID      bson.ObjectId `json:"id" bson:"_id,omitempty"`
+	KeySalt string        `json:"key_salt"`
+	KeyHash string        `json:"key_hash"`
+	Created time.Time     `json:"created"`
 }
 
 type Session struct {
-	ID       int64
+	ID       bson.ObjectId `json:"id" bson:"_id,omitempty"`
 	ChefID   string
 	KeySalt  string
 	KeyHash  string

@@ -254,7 +254,7 @@ Page {
                         Layout.fillWidth: true
                         enabled: WebSocket.connectionStatus === 3
                         echoMode: TextInput.Password
-                        onAccepted: {}
+                        onAccepted: send()
                         onTextChanged: checkMatchingPasswords()
                     }
                     Button {
@@ -262,6 +262,7 @@ Page {
                         text: "Submit"
                         Layout.fillWidth: true
                         enabled: false
+                        onClicked: send()
                     }
                     Button {
                         id: cancel
@@ -295,7 +296,23 @@ Page {
                         passwordField.text.length !== 0 &&
                         confirmPasswordField.text.length !== 0
             }
-            Component.onCompleted: emailField.forceActiveFocus()
+
+            property int outgoingReqId: -1
+
+            function send() {
+                outgoingReqId = WebSocket.outgoing_newChef(emailField.text,
+                                                           passwordField.text)
+            }
+            function response(reqId, txtMsg) {
+                if (reqId !== outgoingReqId)
+                    return;
+                console.log(txtMsg)
+            }
+
+            Component.onCompleted: {
+                WebSocket.onResponseTextMessage.connect(response)
+                emailField.forceActiveFocus()
+            }
         }
     }
 

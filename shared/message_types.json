@@ -5,9 +5,15 @@
   },
   {
     "cmd": "new_chef",
+    "typ": 0,
     "msg": {
       "email": "new.chef@test.com",
       "password": "recipes_secured!"
     }
+  },
+  {
+    "cmd": "new_chef",
+    "typ": 1,
+    "msg": "please check your email to activate your account for new.chef@test.com"
   }
 ]

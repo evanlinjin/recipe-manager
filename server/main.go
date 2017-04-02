@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"github.com/evanlinjin/recipe-manager/server/chefs"
 	"github.com/evanlinjin/recipe-manager/server/conn"
+	"github.com/evanlinjin/recipe-manager/server/handle"
 	"github.com/gorilla/websocket"
 	"net/http"
 	"time"
-	"github.com/evanlinjin/recipe-manager/server/handle"
 )
 
 // ObjectGroup groups a bunch of objects together to convenient passing between
@@ -28,9 +28,10 @@ func MakeObjectGroup() (g ObjectGroup, e error) {
 		WriteBufferSize: 1024,
 	}
 
-	cdb, e := chefs.MakeChefsDB(chefs.Config{
-		DomainName: "http://localhost:8080",
-		BotEmail: "noreply.recipemanager.io@gmail.com",
+	cdb, e := chefs.MakeChefsDB(&chefs.Config{
+		DomainName:  "http://localhost:8080",
+		MongoUrls: "127.0.0.1:32017",
+		BotEmail:    "noreply.recipemanager.io@gmail.com",
 		BotEmailPwd: "",
 	})
 	g.ChefsDB = &cdb

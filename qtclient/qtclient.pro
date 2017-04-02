@@ -6,7 +6,8 @@ SOURCES += main.cpp \
     src/encryptor.cpp \
     src/messagemanager.cpp \
     src/package.cpp \
-    src/websocketconnection.cpp
+    src/websocketconnection.cpp \
+    src/websocketconnection_outgoing.cpp
 
 RESOURCES += qml.qrc \
     qtquickcontrols2.conf \

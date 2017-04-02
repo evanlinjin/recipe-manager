@@ -30,11 +30,6 @@ private:
     Encryptor* m_enc;
     MessageManager* m_msgs;
 
-    void send(QJsonObject &obj);
-    void process(const QJsonObject &obj);
-
-    bool ps_handshake(const MSG::Message &msg);
-
     QTimer *m_timer, *m_checker;
     int m_connectionStatus;
     bool m_gotPong;
@@ -43,8 +38,8 @@ private:
 
 signals:
     void connectionStatusChanged();
-    void msgRecieved(QJsonObject);
     void networkError();
+    void responseTextMessage(int reqId, QString textMsg);
 
 private slots:
     void onStateChanged(QAbstractSocket::SocketState);
@@ -64,6 +59,17 @@ private slots:
 public slots:
     void open(QString v) {m_ws.open(QUrl(v));}
     void close() {m_ws.close();}
+
+private:
+    void send(QJsonObject &obj);
+    void process(const QJsonObject &obj);
+
+    bool ps_handshake(const MSG::Message &msg);
+    bool ps_new_chef(const MSG::Message &msg);
+
+
+public slots:
+    int outgoing_newChef(QString email, QString password);
 };
 
 #endif // WEBSOCKETCONNECTION_H
