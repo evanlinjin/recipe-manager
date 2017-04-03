@@ -9,6 +9,20 @@ const (
 	DBAuth  = "auth"
 	CTChefs = "chefs"
 	CTVerts = "verifications"
+
+	ActivationEscURL  = `/action/`
+	NewAccountMessage = `
+Hello fellow chef, welcome to Recipe Manager!
+
+To activate your account, click the following link:
+%s
+
+If you didn't create an account on Recipe Manager, click here:
+%s
+
+Kind Regards,
+
+Team @ Recipe Manager'`
 )
 
 // Config contains data to configure ChefsDB.
@@ -37,10 +51,10 @@ type Verification struct {
 
 type Session struct {
 	ID       bson.ObjectId `json:"id" bson:"_id,omitempty"`
-	ChefID   string
-	KeySalt  string
-	KeyHash  string
-	Meta     string
-	Created  time.Time
-	LastSeen time.Time
+	ChefID   string        `json:"chef_id"`
+	KeySalt  string        `json:"key_salt"`
+	KeyHash  string        `json:"key_hash"`
+	Meta     string        `json:"meta"`
+	Created  time.Time     `json:"created"`
+	LastSeen time.Time     `json:"last_seen"`
 }

@@ -7,7 +7,8 @@ SOURCES += main.cpp \
     src/messagemanager.cpp \
     src/package.cpp \
     src/websocketconnection.cpp \
-    src/websocketconnection_outgoing.cpp
+    src/session.cpp \
+    src/jsondb.cpp
 
 RESOURCES += qml.qrc \
     qtquickcontrols2.conf \
@@ -43,4 +44,6 @@ HEADERS += \
     src/encryptor.h \
     src/messagemanager.h \
     src/package.h \
-    src/websocketconnection.h
+    src/websocketconnection.h \
+    src/session.h \
+    src/jsondb.h

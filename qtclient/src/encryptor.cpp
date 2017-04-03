@@ -112,6 +112,11 @@ QByteArray Encryptor::makeKey() {
     return key.toBase64(QByteArray::Base64UrlEncoding | QByteArray::OmitTrailingEquals);
 }
 
+QByteArray Encryptor::makeTimestampedKey() {
+    return QByteArray::number(QDateTime::currentMSecsSinceEpoch()).
+            append(makeKey());
+}
+
 void Encryptor::resetKey() {
     memset(m_key, 0, DEF_SIZE);
 }

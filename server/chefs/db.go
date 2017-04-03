@@ -14,26 +14,6 @@ import (
 	"time"
 )
 
-const (
-	TableChefs         = "chefs"
-	TableVerifications = "verifications"
-	TableSessions      = "sessions"
-	ActivationEscURL   = `/action/`
-
-	NewAccountMessage = `
-Hello fellow chef, welcome to Recipe Manager!
-
-To activate your account, click the following link:
-%s
-
-If you didn't create an account on Recipe Manager, click here:
-%s
-
-Kind Regards,
-
-Team @ Recipe Manager'`
-)
-
 type ChefsDB struct {
 	sync.Mutex
 	config  *Config
@@ -232,7 +212,7 @@ func (c *ChefsDB) ActivateChef(escapedURLPath string) (page string, e error) {
 	// Verify/Delete chef based on the specified action.
 	switch action {
 	case "activate":
-		e := c.chefs.UpdateId(id, bson.M{"verified":true})
+		e := c.chefs.UpdateId(id, bson.M{"verified": true})
 		if e != nil {
 			return "", &ErrInternal{e}
 		}
@@ -249,3 +229,4 @@ func (c *ChefsDB) ActivateChef(escapedURLPath string) (page string, e error) {
 	e = c.verts.RemoveId(id)
 	return
 }
+

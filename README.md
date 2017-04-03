@@ -1,8 +1,6 @@
 # Recipe Manager
 [recipemanager.io](https://recipemanager.io/)
 
-***Very Early Stages of Development - Useless for the end user.***
-
 Recipe Manager is a cross-platform application for managing recipes in teams. It features high security, real-time updates and a convergent UI design. **Most of these features have yet to be implemented.**
 
 The project is an attempt on making real-time secure network communication in Qt easier. It is a combination of both, a server side app written in Golang and a client side app in Qt (C++/QML).

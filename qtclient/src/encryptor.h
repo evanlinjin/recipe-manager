@@ -1,4 +1,4 @@
-#ifndef PACKAGEENCRYPTOR_H
+#ifndef ENCRYPTOR_H
 #define ENCRYPTOR_H
 
 #include <cryptopp/aes.h>
@@ -9,7 +9,7 @@
 
 #include <QObject>
 #include <QDebug>
-//#include <iostream>
+#include <QDateTime>
 
 #include "package.h"
 
@@ -29,6 +29,7 @@ public slots:
 
     void setKey(const QByteArray& encKey);
     QByteArray makeKey();
+    QByteArray makeTimestampedKey();
     void resetKey();
 };
 

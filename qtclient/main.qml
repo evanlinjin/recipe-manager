@@ -21,9 +21,33 @@ ApplicationWindow {
         id: mainLoader
         anchors.fill: parent
         sourceComponent: welcomePage
+
+        states: [
+            State {
+                name: "loggedIn"
+                PropertyChanges {
+                    target: mainLoader
+                    sourceComponent: test
+                }
+            }
+        ]
+
+        state: Session.sessionID === "" ?
+                   "" : "loggedIn"
     }
 
     Component{id: welcomePage; WelcomePage{}}
+
+    Component{
+        id: test
+        Item {
+            anchors.fill: parent
+            Label {
+                anchors.centerIn: parent
+                text: "HELLO WORLD!\nYOU ARE LOGGED IN!!!"
+            }
+        }
+    }
 
     Component.onCompleted: {
         WebSocket.open(wsUrl)

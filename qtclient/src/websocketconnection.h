@@ -11,6 +11,7 @@
 #include "package.h"
 #include "encryptor.h"
 #include "messagemanager.h"
+#include "session.h"
 
 class WebSocketConnection : public QObject
 {
@@ -39,7 +40,6 @@ private:
 signals:
     void connectionStatusChanged();
     void networkError();
-    void responseTextMessage(int reqId, QString textMsg);
 
 private slots:
     void onStateChanged(QAbstractSocket::SocketState);
@@ -60,16 +60,24 @@ public slots:
     void open(QString v) {m_ws.open(QUrl(v));}
     void close() {m_ws.close();}
 
+    /**************************************************************************/
+    /* INCOMING/OUTGOING STUFF                                                */
+    /**************************************************************************/
+
 private:
     void send(QJsonObject &obj);
-    void process(const QJsonObject &obj);
 
     bool ps_handshake(const MSG::Message &msg);
     bool ps_new_chef(const MSG::Message &msg);
-
+    bool ps_login(const MSG::Message &msg);
 
 public slots:
     int outgoing_newChef(QString email, QString password);
+    int outgoing_login(QString email, QString password);
+
+signals:
+    void responseTextMessage(int reqId, QString textMsg);
+    void changeSession(int reqId, SessionInfo info);
 };
 
 #endif // WEBSOCKETCONNECTION_H

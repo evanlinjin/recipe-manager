@@ -1,19 +1,41 @@
 [
-  {
-    "cmd": "handshake",
-    "msg": "secure_key"
-  },
-  {
-    "cmd": "new_chef",
-    "typ": 0,
-    "msg": {
-      "email": "new.chef@test.com",
-      "password": "recipes_secured!"
+    {
+        "cmd": "handshake",
+        "msg": "secure_key"
+    },
+    {
+        "cmd": "new_chef",
+        "typ": 0,
+        "msg": {
+            "email": "new.chef@test.com",
+            "password": "recipes_secured!"
+        }
+    },
+    {
+        "cmd": "new_chef",
+        "typ": 1,
+        "msg": "please check your email to activate your account for new.chef@test.com"
     }
-  },
-  {
-    "cmd": "new_chef",
-    "typ": 1,
-    "msg": "please check your email to activate your account for new.chef@test.com"
-  }
+    {
+        "cmd": "login",
+        "typ": 0,
+        "msg": {
+            "email": "chef@email.com",
+            "password": "secret"
+        }
+    },
+    {
+        "cmd": "login",
+        "typ": 1,
+        "msg": {
+            "okay": true,
+            "session": {
+                "session_id": "",
+                "session_key": "",
+                "user_id": "",
+                "user_name": "",
+                "user_email": ""
+            }
+        }
+    }
 ]

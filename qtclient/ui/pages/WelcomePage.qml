@@ -27,10 +27,7 @@ Page {
                 onClicked: stack.depth > 1 ?
                                stack.pop() : stack.push(aboutItem)
             }
-
         }
-
-
         background: Item{}
     }
 
@@ -58,6 +55,7 @@ Page {
         id: loginItem
         Item {
             Pane {
+                id: pane
                 anchors.centerIn: parent
                 anchors.verticalCenterOffset: -30
                 width: parent.width > maxContainerWidth ?
@@ -84,6 +82,7 @@ Page {
                         enabled: WebSocket.connectionStatus === 3
                         inputMethodHints: Qt.ImhEmailCharactersOnly | Qt.ImhLowercaseOnly | Qt.ImhNoAutoUppercase
                         onAccepted: passwordField.forceActiveFocus()
+                        onTextChanged: checkSubmitOkay()
                     }
                     TextField {
                         id: passwordField
@@ -91,13 +90,17 @@ Page {
                         Layout.fillWidth: true
                         enabled: WebSocket.connectionStatus === 3
                         echoMode: TextInput.Password
-                        onAccepted: {}
+                        onAccepted: loginButton.enabled ?
+                                        send() : {}
+                        onTextChanged: checkSubmitOkay()
                     }
                     Button {
                         id: loginButton
                         Layout.fillWidth: true
                         text: "Login"
                         enabled: WebSocket.connectionStatus === 3
+                        visible: false
+                        onClicked: send()
                     }
                     Button {
                         Layout.fillWidth: true
@@ -119,6 +122,35 @@ Page {
                     Component.onCompleted: emailField.forceActiveFocus()
                 }
             }
+            BusyIndicator {
+                id: busySpinner
+                anchors.centerIn: parent
+                running: false
+            }
+            states: [
+                State {
+                    name: "processing"
+                    PropertyChanges {
+                        target: pane
+                        enabled: false
+                    }
+                    PropertyChanges {
+                        target: busySpinner
+                        running: true
+                    }
+                }
+            ]
+            function checkSubmitOkay() {
+                loginButton.visible =
+                        /[^\s@]+@[^\s@]+\.[^\s@]+/.test(emailField.text) &&
+                        passwordField.text.length >= 6
+            }
+            function send() {
+                outgoingReqId = WebSocket.outgoing_login(emailField.text,
+                                                         passwordField.text)
+                state = "processing"
+            }
+            Component.onCompleted: emailField.forceActiveFocus()
         }
     }
 
@@ -292,7 +324,6 @@ Page {
                     }
                 }
             ]
-
             function checkEmailValid() {
                 invalidEmail.visible =
                         !/[^\s@]+@[^\s@]+\.[^\s@]+/.test(emailField.text)
@@ -316,13 +347,11 @@ Page {
                         passwordField.text.length !== 0 &&
                         confirmPasswordField.text.length !== 0
             }
-
             function send() {
                 outgoingReqId = WebSocket.outgoing_newChef(emailField.text,
                                                            passwordField.text)
                 state = "processing"
             }
-
             Component.onCompleted: emailField.forceActiveFocus()
         }
     }

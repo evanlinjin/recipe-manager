@@ -86,6 +86,10 @@ void WebSocketConnection::onStateChanged(QAbstractSocket::SocketState state) {
     qDebug() << "[WebSocketConnection::onStateChanged] State:" << state;
 }
 
+/******************************************************************************/
+/* INCOMING MESSAGES FROM SERVER TO CLIENT                                    */
+/******************************************************************************/
+
 void WebSocketConnection::onReceived(QString data) {
 
     // Split msg into Signature and Data.
@@ -103,16 +107,13 @@ void WebSocketConnection::onReceived(QString data) {
     auto package = m_enc->decrypt(encPackage);
 
     // Vertify Data with Signature.
-    auto msg = Package::ReadPackage(package, signature);
-    qInfo() << "[WebSocketConnection::onReceived]" << msg;
-    if (m_msgs->checkIncomingMessage(msg) == false) {
+    auto obj = Package::ReadPackage(package, signature);
+    qInfo() << "[WebSocketConnection::onReceived]" << obj;
+    if (m_msgs->checkIncomingMessage(obj) == false) {
         return;
     }
 
-    process(msg);
-}
-
-void WebSocketConnection::process(const QJsonObject &obj) {
+    // Convert to message struct and process.
     MSG::Message msg = MSG::obj_to_struct(obj);
 
     if (msg.cmd == "handshake")
@@ -120,9 +121,9 @@ void WebSocketConnection::process(const QJsonObject &obj) {
 
     if (msg.cmd == "new_chef")
         ps_new_chef(msg);
-
 }
 
+// Processes incoming handshake request.
 bool WebSocketConnection::ps_handshake(const MSG::Message &msg) {
     if (msg.typ != TYPE_REQUEST) {
         m_ws.close(QWebSocketProtocol::CloseCodeWrongDatatype,
@@ -144,15 +145,58 @@ bool WebSocketConnection::ps_handshake(const MSG::Message &msg) {
     return true;
 }
 
+// Processes incoming new_chef response.
 bool WebSocketConnection::ps_new_chef(const MSG::Message &msg) {
-    if (msg.typ != TYPE_RESPONSE)
-        qDebug() << "[ WebSocketConnection::ps_new_chef]"
-                 << "Got a request to create new chef from server? haha";
-
     if (msg.data.isString() == false)
-        qDebug() << "[ WebSocketConnection::ps_new_chef]"
+        qDebug() << "[WebSocketConnection::ps_new_chef]"
                  << "Invalid response from server.";
 
     emit responseTextMessage(msg.req->id, msg.data.toString());
     return true;
+}
+
+// Processes incoming login response.
+bool WebSocketConnection::ps_login(const MSG::Message &msg) {
+    if (msg.data.isObject() == false)
+        qDebug() << "[WebSocketConnection::ps_login]"
+                 << "Wrong data type from server.";
+
+    auto obj = msg.data.toObject();
+    SessionInfo info;
+
+    if (obj.value("okay") == true) {
+        obj = obj.value("session").toObject();
+        info.sessionID = obj.value("session_id").toString();
+        info.sessionKey = obj.value("session_key").toString();
+        info.chefID = obj.value("chef_id").toString();
+        info.chefName = obj.value("chef_name").toString();
+        info.chefEmail = obj.value("chef_email").toString();
+    } else {
+        emit responseTextMessage(msg.req->id, obj.value("message").toString());
+    }
+
+    emit changeSession(msg.req->id, info);
+    return true;
+}
+
+/******************************************************************************/
+/* OUTGOING MESSAGES FROM CLIENT TO SERVER                                    */
+/******************************************************************************/
+
+// Sends a new_chef request. Returns the msg ID of sent message.
+int WebSocketConnection::outgoing_newChef(QString email, QString password) {
+    QJsonObject data;
+    data.insert("email", email);
+    data.insert("password", password);
+    auto outMsg = sendRequestMessage("new_chef", data);
+    return outMsg->value(MSG::Meta).toObject().value(MSG::ID).toInt();
+}
+
+// Sends a login request. Returns the msg ID of sent message.
+int WebSocketConnection::outgoing_login(QString email, QString password) {
+    QJsonObject data;
+    data.insert("email", email);
+    data.insert("password", password);
+    auto outMsg = sendRequestMessage("login", data);
+    return outMsg->value(MSG::Meta).toObject().value(MSG::ID).toInt();
 }
