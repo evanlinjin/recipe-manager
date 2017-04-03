@@ -11,17 +11,15 @@ import (
 )
 
 // ObjectGroup groups a bunch of objects together to convenient passing between
-// function. Note that members are all references.
+// functions. One object group is shared between all the chefs.
 type ObjectGroup struct {
-	OutgoingMessages chan *conn.Message
-	Upgrader         *websocket.Upgrader
-	ChefsDB          *chefs.ChefsDB
+	Upgrader *websocket.Upgrader
+	ChefsDB  *chefs.ChefsDB // This is shared via reference across all chefs.
 }
 
 // MakeObjectGroup makes a new instance of ObjectGroup.
+// One object group per chef.
 func MakeObjectGroup() (g ObjectGroup, e error) {
-
-	g.OutgoingMessages = make(chan *conn.Message)
 
 	g.Upgrader = &websocket.Upgrader{
 		ReadBufferSize:  1024,
@@ -77,8 +75,8 @@ func MakeWebSocketEndpoint(g ObjectGroup) func(
 		go func() {
 			for {
 				select {
-				case m := <-g.OutgoingMessages:
-					ws.SendMessage(m)
+				//case m := <-g.OutgoingMessages:
+				//	ws.SendMessage(m)
 
 				case <-ws.QuitChan:
 					return
@@ -123,19 +121,31 @@ func MakeWebSocketEndpoint(g ObjectGroup) func(
 						d, e := handle.GetNewChefData(m.Data)
 						if e != nil {
 							msg := fmt.Sprintf("invalid data structure: %v", e)
-							fmt.Printf("[%v] %v", r.RemoteAddr, msg)
 							ws.SendResponseMessage(m, msg)
 							break
 						}
 						if e := g.ChefsDB.AddChef(d.Email, d.Password); e != nil {
 							msg := fmt.Sprintf("invalid request: %v", e)
-							fmt.Printf("[%v] %v", r.RemoteAddr, msg)
 							ws.SendResponseMessage(m, msg)
 							break
 						}
 						msg := fmt.Sprintf("please check your email to activate your account for %v", d.Email)
-						fmt.Printf("[%v] %v", r.RemoteAddr, msg)
 						ws.SendResponseMessage(m, msg)
+
+					case "login":
+						d, e := handle.GetLoginData(m.Data)
+						if e != nil {
+							msg := "invalid data structure"
+							ws.SendResponseMessage(m, msg)
+							break
+						}
+						sessionInfo, e := g.ChefsDB.NewSession(d.Email, d.Password)
+						if e != nil {
+							msg := handle.HandleNewSessionError(e)
+							ws.SendResponseMessage(m, msg)
+							break
+						}
+						ws.SendResponseMessage(m, sessionInfo)
 					}
 
 				case conn.TypeResponse:

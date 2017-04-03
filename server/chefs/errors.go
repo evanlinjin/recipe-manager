@@ -1,6 +1,13 @@
 package chefs
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+)
+
+var (
+	ErrLoginFailed = errors.New("login failed")
+)
 
 type ErrChefAlreadyExists struct {
 	email string

@@ -1,7 +1,13 @@
 #ifndef PACKAGE_H
 #define PACKAGE_H
 
-#include <cryptopp/osrng.h>
+//#ifndef Q_OS_LINUX
+////#include <cryptopp/osrng.h>
+//#endif //Q_OS_LINUX
+
+//#ifndef Q_OS_ANDROID
+//#include "third_party/cryptopp/osrng.h"
+//#endif //Q_OS_ANDROID
 
 #include <QJsonObject>
 #include <QJsonDocument>

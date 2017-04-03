@@ -21,8 +21,19 @@ bool Session::getSessionFromObject(const QJsonObject &obj) {
                 obj.value("chef_name").toString();
         m_sessionInfo.chefEmail =
                 obj.value("chef_email").toString();
+
+        auto teamsArray = obj.value("teams").toArray();
+        for (int i = 0; i < teamsArray.size(); i++) {
+            m_sessionInfo.teams.append(teamsArray.at(i).toString());
+        }
+
         emit sessionChanged();
         return true;
     }
     return false;
+}
+
+void Session::changeSession(int reqId, SessionInfo info) {
+    m_sessionInfo = info;
+    emit sessionChanged();
 }

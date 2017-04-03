@@ -6,6 +6,7 @@
 #include <QDebug>
 #include <QString>
 #include <QStringList>
+#include <QJsonArray>
 #include <QTimer>
 
 #include "package.h"

@@ -123,7 +123,8 @@ func (c *ChefsDB) AddChef(email, pwd string) error {
 	return nil
 }
 
-// SendMail sends mail.
+// SendMail sends mail. Specifically, this is used to send a confirmation email
+// to confirm created user.
 func (c *ChefsDB) SendMail(to, subject, body string) error {
 	to = strings.TrimSpace(to)
 	from := c.config.BotEmail
@@ -230,3 +231,64 @@ func (c *ChefsDB) ActivateChef(escapedURLPath string) (page string, e error) {
 	return
 }
 
+// NewSession (or login) creates a new session for a user. It returns an error
+// if not authenticated.
+func (c *ChefsDB) NewSession(email, pwd string) (
+	sessionInfo *SessionInfo, e error) {
+
+	c.Lock()
+	defer c.Unlock()
+	email = strings.TrimSpace(email)
+
+	// Find chef with email in database.
+	chef := Chef{}
+	e = c.chefs.Find(bson.M{"email": email}).One(&chef)
+	if e != nil {
+		return nil, ErrLoginFailed
+	}
+
+	// Check authentication.
+	e = bcrypt.CompareHashAndPassword(
+		[]byte(chef.PwdHash), []byte(pwd+chef.PwdSalt))
+	if e != nil {
+		return nil, ErrLoginFailed
+	}
+
+	// Generate session id and session key.
+	sessionID := bson.NewObjectId()
+	key := GetRand32Str()
+	keySalt := GetRand32Str()
+	keyHash, e := bcrypt.GenerateFromPassword([]byte(key+keySalt), 10)
+	if e != nil {
+		return nil, &ErrInternal{e}
+	}
+
+	// Create Session and SessionInfo objects.
+	sessionObj := Session{
+		ID:       sessionID,
+		ChefID:   chef.ID.Hex(),
+		KeySalt:  keySalt,
+		KeyHash:  string(keyHash),
+		Created:  time.Now(),
+		LastSeen: time.Now(),
+	}
+	sessionInfoObj := SessionInfo{
+		SessionID:  sessionID.Hex(),
+		SessionKey: key,
+		ChefID:     chef.ID.Hex(),
+		ChefName:   "",
+		ChefEmail:  chef.Email,
+		Teams:      chef.Teams,
+	}
+
+	// Add session to chef and update chef in db.
+	// TODO: Remove outdated sessions while at it?
+	//sessionList := append(chef.Sessions, sessionObj)
+	b := bson.M{"$push": bson.M{"sessions": sessionObj}}
+	e = c.chefs.UpdateId(chef.ID, b)
+	if e != nil {
+		return nil, &ErrInternal{e}
+	}
+
+	return &sessionInfoObj, nil
+}

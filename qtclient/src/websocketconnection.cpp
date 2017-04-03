@@ -121,6 +121,9 @@ void WebSocketConnection::onReceived(QString data) {
 
     if (msg.cmd == "new_chef")
         ps_new_chef(msg);
+
+    if (msg.cmd == "login")
+        ps_login(msg);
 }
 
 // Processes incoming handshake request.
@@ -171,6 +174,10 @@ bool WebSocketConnection::ps_login(const MSG::Message &msg) {
         info.chefID = obj.value("chef_id").toString();
         info.chefName = obj.value("chef_name").toString();
         info.chefEmail = obj.value("chef_email").toString();
+        QJsonArray teams = obj.value("teams").toArray();
+        for (int i = 0; i < teams.size(); i++) {
+            info.teams.append(teams.at(i).toString());
+        }
     } else {
         emit responseTextMessage(msg.req->id, obj.value("message").toString());
     }

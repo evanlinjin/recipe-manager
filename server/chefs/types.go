@@ -33,6 +33,7 @@ type Config struct {
 	BotEmailPwd string
 }
 
+// Chef represents how a Chef is recorded in database.
 type Chef struct {
 	ID       bson.ObjectId `json:"id" bson:"_id,omitempty"`
 	Email    string        `json:"email"`
@@ -40,8 +41,12 @@ type Chef struct {
 	PwdHash  string        `json:"pwd_hash"`
 	Verified bool          `json:"vertified"`
 	Created  time.Time     `json:"created"`
+	Config   ChefConfig    `json:"config,omitempty"`
+	Sessions []Session     `json:"sessions"`
+	Teams    []string      `json:"teams,omitempty"`
 }
 
+// Verification represents how a verification method is recorded in database.
 type Verification struct {
 	ID      bson.ObjectId `json:"id" bson:"_id,omitempty"`
 	KeySalt string        `json:"key_salt"`
@@ -49,6 +54,7 @@ type Verification struct {
 	Created time.Time     `json:"created"`
 }
 
+// Session represents how a session is recorded in database.
 type Session struct {
 	ID       bson.ObjectId `json:"id" bson:"_id,omitempty"`
 	ChefID   string        `json:"chef_id"`
@@ -57,4 +63,18 @@ type Session struct {
 	Meta     string        `json:"meta"`
 	Created  time.Time     `json:"created"`
 	LastSeen time.Time     `json:"last_seen"`
+}
+
+// SessionInfo represents how a session is to be presented to the client.
+type SessionInfo struct {
+	SessionID  string   `json:"session_id"`
+	SessionKey string   `json:"session_key"`
+	ChefID     string   `json:"user_id"`
+	ChefName   string   `json:"chef_name"`
+	ChefEmail  string   `json:"chef_email"`
+	Teams      []string `json:"teams"`
+}
+
+// ChefConfig is yet to be implemented.
+type ChefConfig struct {
 }

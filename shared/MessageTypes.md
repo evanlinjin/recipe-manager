@@ -1,13 +1,13 @@
 # Handshake
 `"cmd": "handshake"`
 
-**Request (Server to Client)**
+**Request (Server to Client)**<br>
 string representing the key
 ```json
 "secure_key"
 ```
 
-**Response (Client to Server)**
+**Response (Client to Server)**<br>
 boolean representing whether the key was accepted
 ```json
 true
@@ -16,7 +16,7 @@ true
 # New Account
 `"cmd": "new_chef"`
 
-**Request (Client to Server)**
+**Request (Client to Server)**<br>
 object containing email and password
 ```json
 {
@@ -25,7 +25,7 @@ object containing email and password
 }
 ```
 
-**Response (Server to Client)**
+**Response (Server to Client)**<br>
 string representing a message to display to end user
 ```json
 "please check your email to activate your account"
@@ -34,7 +34,7 @@ string representing a message to display to end user
 # Login
 `"cmd": "login"`
 
-**Request (Client to Server)**
+**Request (Client to Server)**<br>
 object containing email and password
 ```json
 {
@@ -43,7 +43,7 @@ object containing email and password
 }
 ```
 
-**Response (Server to Client)**
+**Response (Server to Client)**<br>
 object container whether login successful and account info
 ```json
 {
@@ -51,9 +51,10 @@ object container whether login successful and account info
     "session": {
         "session_id": "",
         "session_key": "",
-        "user_id": "",
-        "user_name": "",
-        "user_email": ""
+        "chef_id": "",
+        "chef_name": "",
+        "chef_email": "",
+        "teams": ["team_id_1", "team_id_2"]
     }
 }
 ```

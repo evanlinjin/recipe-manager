@@ -2,6 +2,7 @@
 #define SESSION_H
 
 #include <QObject>
+#include <QJsonArray>
 
 #include "jsondb.h"
 
@@ -11,6 +12,7 @@ struct SessionInfo {
     QString chefID;
     QString chefName;
     QString chefEmail;
+    QStringList teams;
 };
 
 class Session : public QObject
@@ -18,9 +20,10 @@ class Session : public QObject
     Q_OBJECT
     Q_PROPERTY(QString sessionID READ sessionID NOTIFY sessionChanged)
     Q_PROPERTY(QString sessionKey READ sessionKey NOTIFY sessionChanged)
-    Q_PROPERTY(QString chefID READ userID NOTIFY sessionChanged)
-    Q_PROPERTY(QString chefName READ userName NOTIFY sessionChanged)
-    Q_PROPERTY(QString chefEmail READ userEmail NOTIFY sessionChanged)
+    Q_PROPERTY(QString chefID READ chefID NOTIFY sessionChanged)
+    Q_PROPERTY(QString chefName READ chefName NOTIFY sessionChanged)
+    Q_PROPERTY(QString chefEmail READ chefEmail NOTIFY sessionChanged)
+    Q_PROPERTY(QStringList teams READ teams NOTIFY sessionChanged)
 
 public:
     explicit Session(QObject *parent = 0);
@@ -30,6 +33,7 @@ public:
     QString chefID() const {return m_sessionInfo.chefID;}
     QString chefName() const {return m_sessionInfo.chefName;}
     QString chefEmail() const {return m_sessionInfo.chefEmail;}
+    QStringList teams() const {return m_sessionInfo.teams;}
 
 private:
     JsonDB m_db;
@@ -41,6 +45,7 @@ signals:
     void sessionChanged();
 
 public slots:
+    void changeSession(int reqId, SessionInfo info);
 };
 
 #endif // SESSION_H

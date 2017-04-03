@@ -1,12 +1,6 @@
 #ifndef ENCRYPTOR_H
 #define ENCRYPTOR_H
 
-#include <cryptopp/aes.h>
-#include <cryptopp/randpool.h>
-#include <cryptopp/modes.h>
-#include <cryptopp/cryptlib.h>
-#include <cryptopp/osrng.h>
-
 #include <QObject>
 #include <QDebug>
 #include <QDateTime>
@@ -21,7 +15,7 @@ public:
     static const qint64 DEF_SIZE = 16;
 
 private:
-    byte m_key[16];
+    unsigned char m_key[16];
 
 public slots:
     QByteArray encrypt(QByteArray data);

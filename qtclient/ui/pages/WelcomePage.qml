@@ -66,6 +66,7 @@ Page {
                     id: container
                     anchors.left: parent.left
                     anchors.right: parent.right
+                    anchors.margins: 10
                     Image {
                         id: icon
                         source: "qrc:/ui/icons/recipemanager.png"
@@ -119,7 +120,6 @@ Page {
                         Layout.fillHeight: true
                         Layout.fillWidth: true
                     }
-                    Component.onCompleted: emailField.forceActiveFocus()
                 }
             }
             BusyIndicator {
@@ -150,7 +150,6 @@ Page {
                                                          passwordField.text)
                 state = "processing"
             }
-            Component.onCompleted: emailField.forceActiveFocus()
         }
     }
 
@@ -168,6 +167,7 @@ Page {
                     id: container
                     anchors.left: parent.left
                     anchors.right: parent.right
+                    anchors.margins: 10
                     Label {
                         Layout.fillWidth: true
                         text: "Change Connection URL:"
@@ -180,10 +180,6 @@ Page {
                             WebSocket.close()
                             WebSocket.open(urlInput.text)
                             stack.pop()
-                        }
-                        Component.onCompleted: {
-                            selectAll()
-                            forceActiveFocus()
                         }
                     }
                     Button {
@@ -222,6 +218,7 @@ Page {
                     id: container
                     anchors.left: parent.left
                     anchors.right: parent.right
+                    anchors.margins: 10
                     Image {
                         id: icon
                         source: "qrc:/ui/icons/recipemanager.png"
@@ -352,7 +349,6 @@ Page {
                                                            passwordField.text)
                 state = "processing"
             }
-            Component.onCompleted: emailField.forceActiveFocus()
         }
     }
 
@@ -369,8 +365,10 @@ Page {
                 elide: Text.ElideRight
                 wrapMode: Text.Wrap
                 width: parent.width
+                onTextChanged: console.log("text changed to: ", text)
             }
             standardButtons: Dialog.Ok
+            function setTextAndOpen(txt) {msgDialogBody.text = txt; open()}
     }
 
     Component{id: aboutItem; AboutItem{}}
@@ -390,11 +388,9 @@ Page {
     function response(reqId, txtMsg) {
         if (reqId !== outgoingReqId)
             return;
-        console.log(txtMsg)
         while (stack.depth > 1)
             stack.pop()
-        msgDialogBody.text = txtMsg
-        msgDialog.open()
+        msgDialog.setTextAndOpen(txtMsg)
     }
 
     Component.onCompleted: WebSocket.onResponseTextMessage.connect(response)

@@ -5,80 +5,13 @@ Encryptor::Encryptor(QObject *parent) : QObject(parent) {
 }
 
 QByteArray Encryptor::encrypt(QByteArray data) {
-
-    // Pad data with 0's. TODO: OPTIMIZE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    while (data.length() % DEF_SIZE != 0) {
-        data.append(" ");
-    }
-
-    // Get PlainText Data.
-    char plainText[data.length()];
-    const char* c = data.constData();
-    for (qint64 i = 0; i < data.length(); i++) {
-        plainText[i] = c[i];
-    }
-
-    // Get Message Length.
-    qint64 msgLen = (sizeof(plainText)/sizeof(*plainText));
-
-    // Make random iv.
-    CryptoPP::AutoSeededRandomPool rnd;
-    byte iv[DEF_SIZE];
-    rnd.GenerateBlock(iv, DEF_SIZE);
-
-    // Encrypt.
-    char cipherText[data.length()];
-    CryptoPP::CBC_Mode<CryptoPP::AES>::Encryption e(m_key, DEF_SIZE, iv);
-    e.ProcessData((byte*)cipherText, (byte*)plainText, msgLen);
-
-    QByteArray ivPart;
-    ivPart.reserve(DEF_SIZE);
-    for (int i = 0; i < DEF_SIZE; i++) {
-        ivPart[i] = (char)iv[i];
-    }
-
-    return QByteArray(cipherText, msgLen)
-            .prepend(ivPart)
+    return QByteArray(data)
             .toBase64(QByteArray::Base64UrlEncoding | QByteArray::OmitTrailingEquals);
 }
 
 QByteArray Encryptor::decrypt(QByteArray data) {
-    QByteArray rawData = QByteArray::fromBase64(
+    return QByteArray::fromBase64(
                 data, QByteArray::Base64UrlEncoding | QByteArray::OmitTrailingEquals);
-
-    // Split into iv\cipherText parts.
-    if (rawData.length() < DEF_SIZE) {
-        qDebug("cipherText too short at %d, expecting >= %d", rawData.length(), DEF_SIZE);
-        return QByteArray();
-    }
-
-    const char* c = rawData.constData();
-    const qint64 msgLen = rawData.length() - DEF_SIZE;
-
-    // Get iv part.
-    byte iv[DEF_SIZE];
-    for (qint64 i = 0; i < DEF_SIZE; i++) {
-        iv[i] = (byte)c[i];
-    }
-
-    // Get cipher part.
-    char cipherText[msgLen];
-    for (qint64 i = 0; i < msgLen; i++) {
-        cipherText[i] = (byte)c[i+DEF_SIZE];
-    }
-
-    // Check if cipher part satisfies block size.
-    if (msgLen % DEF_SIZE != 0) {
-        qDebug("cipherText should be a multiple of %d, got %d", DEF_SIZE, msgLen);
-        return QByteArray();
-    }
-
-    // Decrypt.
-    char plainText[msgLen];
-    CryptoPP::CBC_Mode<CryptoPP::AES>::Decryption e(m_key, DEF_SIZE, iv);
-    e.ProcessData((byte*)plainText, (byte*)cipherText, msgLen);
-
-    return QByteArray(plainText, msgLen).trimmed();
 }
 
 void Encryptor::setKey(const QByteArray &encKey) {
@@ -96,18 +29,16 @@ void Encryptor::setKey(const QByteArray &encKey) {
 
     const char* c = key.constData();
     for (qint64 i = 0; i < DEF_SIZE; i++) {
-        m_key[i] = (byte)c[i];
+        m_key[i] = (unsigned char)c[i];
     }
 }
 
 QByteArray Encryptor::makeKey() {
-    byte randBytes[DEF_SIZE];
-    CryptoPP::AutoSeededRandomPool rnd;
-    rnd.GenerateBlock(randBytes, DEF_SIZE);
+    unsigned char randBytes[DEF_SIZE];
 
     QByteArray key(DEF_SIZE, Qt::Uninitialized);
     for(int i = 0; i < DEF_SIZE; i++)
-        key[i] = (char)randBytes[i];
+        key[i] = (char)qrand();
 
     return key.toBase64(QByteArray::Base64UrlEncoding | QByteArray::OmitTrailingEquals);
 }

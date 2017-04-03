@@ -1,6 +1,7 @@
 QT += qml quick quickcontrols2 websockets
 
 CONFIG += c++11
+android: QMAKE_CXXFLAGS += -DNDEBUG -g2 -O3
 
 SOURCES += main.cpp \
     src/encryptor.cpp \
@@ -16,7 +17,8 @@ RESOURCES += qml.qrc \
     $$files(ui/backgrounds/*.png) \
     $$files(ui/fonts/ubuntu/*.ttf)
 
-LIBS += -L/usr/lib/crypto++ -lcryptopp
+
+#linux: LIBS += -L/usr/lib/crypto++ -lcryptopp
 
 # Additional import path used to resolve QML modules in Qt Creator's code model
 QML_IMPORT_PATH =
