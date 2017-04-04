@@ -46,8 +46,6 @@ class MessageManager : public QObject
 public:
     explicit MessageManager(QObject *parent = 0);
 
-
-
     QJsonObject* makeRequestMessage(const QString &cmd, const QJsonValue &data);
     QJsonObject* makeResponseMessage(const QJsonObject &reqMsg, const QJsonValue &data);
     bool checkIncomingMessage(QJsonObject &msg);

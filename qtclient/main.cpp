@@ -31,6 +31,7 @@ int main(int argc, char *argv[])
     rc->setContextProperty("Session", session);
 
     WebSocketConnection* ws = new WebSocketConnection();
+    ws->setSession(session);
     rc->setContextProperty("WebSocket", ws);
 
     engine.load(QUrl(QLatin1String("qrc:/main.qml")));

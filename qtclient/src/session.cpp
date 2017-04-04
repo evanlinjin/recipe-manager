@@ -1,39 +1,52 @@
 #include "session.h"
 
 Session::Session(QObject *parent) : QObject(parent) {
-    QJsonObject config;
-
-    if (m_db.getGlobalConfig(&config) == true) {
-        QJsonObject session = config.value("session").toObject();
-        getSessionFromObject(session);
-    }
+    loadUrl();
+    loadSessionInfo();
 }
 
-bool Session::getSessionFromObject(const QJsonObject &obj) {
+bool Session::loadUrl() {
+    QJsonObject obj;
+    if (m_db.getConfig("url", &obj) == false) {
+        return false;
+    }
     if (!obj.isEmpty()) {
-        m_sessionInfo.sessionID =
-                obj.value("session_id").toString();
-        m_sessionInfo.sessionKey =
-                obj.value("session_key").toString();
-        m_sessionInfo.chefID =
-                obj.value("chef_id").toString();
-        m_sessionInfo.chefName =
-                obj.value("chef_name").toString();
-        m_sessionInfo.chefEmail =
-                obj.value("chef_email").toString();
+        m_url = obj.value("url").toString();
+        emit urlChanged();
+        return true;
+    }
+    return false;
+}
 
-        auto teamsArray = obj.value("teams").toArray();
-        for (int i = 0; i < teamsArray.size(); i++) {
-            m_sessionInfo.teams.append(teamsArray.at(i).toString());
-        }
-
+bool Session::loadSessionInfo() {
+    QJsonObject obj;
+    if (m_db.getConfig("session", &obj) == false) {
+        m_sessionInfo = SessionInfo();
+        emit sessionChanged();
+        return false;
+    }
+    if (!obj.isEmpty()) {
+        m_sessionInfo.loadFromJsonObj(obj);
         emit sessionChanged();
         return true;
     }
     return false;
 }
 
+bool Session::saveSessionInfo() {
+    return m_db.saveConfig("session", m_sessionInfo.toJsonObj());
+}
+
 void Session::changeSession(int reqId, SessionInfo info) {
+    Q_UNUSED(reqId)
     m_sessionInfo = info;
+    saveSessionInfo();
+    emit sessionChanged();
+}
+
+void Session::clearSession() {
+    QJsonObject obj;
+    m_db.saveConfig("session", obj);
+    m_sessionInfo = SessionInfo();
     emit sessionChanged();
 }

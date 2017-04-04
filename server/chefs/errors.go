@@ -6,7 +6,8 @@ import (
 )
 
 var (
-	ErrLoginFailed = errors.New("login failed")
+	ErrLoginFailed      = errors.New("login failed")
+	ErrPermissionDenied = errors.New("you are not authorized to perform this action.")
 )
 
 type ErrChefAlreadyExists struct {

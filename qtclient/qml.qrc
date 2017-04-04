@@ -2,10 +2,16 @@
     <qresource prefix="/">
         <file>main.qml</file>
         <file>ui/pages/WelcomePage.qml</file>
-        <file>ui/components/Fonts.qml</file>
         <file>ui/components/toolbars/DynamicToolBar.qml</file>
         <file>ui/components/labels/HeaderLabel.qml</file>
         <file>ui/pages/AboutItem.qml</file>
         <file>ui/StatusBar.qml</file>
+        <file>ui/pages/HomeItem.qml</file>
+        <file>ui/components/IconToolButton.qml</file>
+        <file>ui/components/Spacer.qml</file>
+        <file>ui/pages/DrawerPage.qml</file>
+        <file>ui/delegates/DrawerBottomDelegate.qml</file>
+        <file>ui/pages/AboutPage.qml</file>
+        <file>ui/pages/SettingsPage.qml</file>
     </qresource>
 </RCC>

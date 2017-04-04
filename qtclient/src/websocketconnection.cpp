@@ -3,7 +3,6 @@
 WebSocketConnection::WebSocketConnection(QObject *parent) :
     QObject(parent), m_connectionStatus(1) {
 
-    m_enc = new Encryptor(this);
     m_msgs = new MessageManager(this);
 
     m_timer = new QTimer(this);
@@ -20,8 +19,8 @@ WebSocketConnection::WebSocketConnection(QObject *parent) :
     connect(&m_ws, SIGNAL(stateChanged(QAbstractSocket::SocketState)),
             this, SLOT(onStateChanged(QAbstractSocket::SocketState)));
 
-    connect(&m_ws, SIGNAL(textMessageReceived(QString)),
-            this, SLOT(onReceived(QString)));
+    connect(&m_ws, SIGNAL(binaryMessageReceived(QByteArray)),
+            this, SLOT(onReceived(QByteArray)));
 
     connect(&m_ws, SIGNAL(error(QAbstractSocket::SocketError)),
             this, SLOT(onError(QAbstractSocket::SocketError)));
@@ -51,30 +50,20 @@ QJsonObject *WebSocketConnection::sendResponseMessage(const QJsonObject &reqMsg,
 
 void WebSocketConnection::send(QJsonObject &obj) {
     qInfo() << "[WebSocketConnection::send]" << obj;
-    // Make random Signature.
-    auto signature = m_enc->makeKey();
-
-    // Make Data into Package with Signature.
-    auto package = Package::MakePackage(obj, signature);
-
-    // Encrypt Data and Signature.
-    auto encSignature = m_enc->encrypt(signature);
-    auto encPackage = m_enc->encrypt(package);
-
-    // Join with dot.
-    QByteArray out;
-    out.append(encSignature).append('.').append(encPackage);
-
-    m_ws.sendTextMessage(QString::fromLatin1(out));
+    auto pkg = QJsonDocument(obj).toJson(QJsonDocument::Compact);
+    m_ws.sendBinaryMessage(pkg);
 }
 
 void WebSocketConnection::onStateChanged(QAbstractSocket::SocketState state) {
     switch (state) {
     case QAbstractSocket::ConnectedState:
         m_timer->start(TIMER_INTERVAL_MS);
+        // START : Claim session ---------------------------------------------->
+        if (m_session->sessionID() != "")
+            outgoing_claimSession();
+        // END : Claim session ------------------------------------------------>
 
     case QAbstractSocket::UnconnectedState:
-        m_enc->resetKey();
         m_msgs->resetIds();
         m_timer->stop();
 
@@ -90,62 +79,21 @@ void WebSocketConnection::onStateChanged(QAbstractSocket::SocketState state) {
 /* INCOMING MESSAGES FROM SERVER TO CLIENT                                    */
 /******************************************************************************/
 
-void WebSocketConnection::onReceived(QString data) {
-
-    // Split msg into Signature and Data.
-    QStringList split = data.split('.', QString::SkipEmptyParts);
-    if (split.length() != 2) {
-        qDebug("Expected %d parts, got %d", 2, split.length());
-        return;
-    }
-
-    auto encSignature = split.at(0).toLatin1();
-    auto encPackage = split.at(1).toLatin1();
-
-    // Decrypt Signature and Data.
-    auto signature = m_enc->decrypt(encSignature);
-    auto package = m_enc->decrypt(encPackage);
-
-    // Vertify Data with Signature.
-    auto obj = Package::ReadPackage(package, signature);
-    qInfo() << "[WebSocketConnection::onReceived]" << obj;
-    if (m_msgs->checkIncomingMessage(obj) == false) {
-        return;
-    }
+void WebSocketConnection::onReceived(QByteArray data) {
+    auto obj = QJsonDocument::fromJson(data).object();
+    qDebug() << "[WebSocketConnection::onReceived]" << obj;
 
     // Convert to message struct and process.
     MSG::Message msg = MSG::obj_to_struct(obj);
-
-    if (msg.cmd == "handshake")
-        ps_handshake(msg);
 
     if (msg.cmd == "new_chef")
         ps_new_chef(msg);
 
     if (msg.cmd == "login")
         ps_login(msg);
-}
 
-// Processes incoming handshake request.
-bool WebSocketConnection::ps_handshake(const MSG::Message &msg) {
-    if (msg.typ != TYPE_REQUEST) {
-        m_ws.close(QWebSocketProtocol::CloseCodeWrongDatatype,
-                   "handshake is not request type");
-        return false;
-    }
-    if (msg.data.isString() == false) {
-        m_ws.close(QWebSocketProtocol::CloseCodeWrongDatatype,
-                   "data does not contain string key");
-        return false;
-    }
-    auto obj = sendResponseMessage(MSG::struct_to_obj(msg), true);
-    if (obj == nullptr) {
-        qDebug() << "[WebSocketConnection::ps_handshake]"
-                 << "Failed to create response; got nullptr.";
-        return false;
-    }
-    m_enc->setKey(msg.data.toString().toLatin1());
-    return true;
+    if (msg.cmd == "claim_session")
+        ps_claimSession(msg);
 }
 
 // Processes incoming new_chef response.
@@ -160,29 +108,43 @@ bool WebSocketConnection::ps_new_chef(const MSG::Message &msg) {
 
 // Processes incoming login response.
 bool WebSocketConnection::ps_login(const MSG::Message &msg) {
+    // On unauthorised.
+    if (msg.data.isString()) {
+        emit responseTextMessage(msg.req->id, msg.data.toString());
+        return true;
+    }
+
     if (msg.data.isObject() == false)
         qDebug() << "[WebSocketConnection::ps_login]"
                  << "Wrong data type from server.";
 
     auto obj = msg.data.toObject();
     SessionInfo info;
+    info.loadFromJsonObj(obj);
 
-    if (obj.value("okay") == true) {
-        obj = obj.value("session").toObject();
-        info.sessionID = obj.value("session_id").toString();
-        info.sessionKey = obj.value("session_key").toString();
-        info.chefID = obj.value("chef_id").toString();
-        info.chefName = obj.value("chef_name").toString();
-        info.chefEmail = obj.value("chef_email").toString();
-        QJsonArray teams = obj.value("teams").toArray();
-        for (int i = 0; i < teams.size(); i++) {
-            info.teams.append(teams.at(i).toString());
-        }
-    } else {
+    m_session->changeSession(msg.req->id, info);
+    return true;
+}
+
+// Processes incoming claim_session response.
+bool WebSocketConnection::ps_claimSession(const MSG::Message &msg) {
+    if (msg.data.isObject() == false)
+        qDebug() << "[WebSocketConnection::ps_claimSession]"
+                 << "Wrong data type from server.";
+
+    auto obj = msg.data.toObject();
+
+    // Remove session if not accepted.
+    if (obj.value("okay") == false) {
         emit responseTextMessage(msg.req->id, obj.value("message").toString());
+        m_session->clearSession();
+        return false;
     }
 
-    emit changeSession(msg.req->id, info);
+    // Reload session info.
+    SessionInfo info;
+    info.loadFromJsonObj(obj.value("session").toObject());
+    m_session->changeSession(msg.req->id, info);
     return true;
 }
 
@@ -205,5 +167,23 @@ int WebSocketConnection::outgoing_login(QString email, QString password) {
     data.insert("email", email);
     data.insert("password", password);
     auto outMsg = sendRequestMessage("login", data);
+    return outMsg->value(MSG::Meta).toObject().value(MSG::ID).toInt();
+}
+
+// Sends a logout request. Returns the msg ID of sent message.
+int WebSocketConnection::outgoing_logout() {
+    QJsonObject data;
+    auto outMsg = sendRequestMessage("logout", data);
+    m_session->clearSession();
+    return outMsg->value(MSG::Meta).toObject().value(MSG::ID).toInt();
+}
+
+// Sends a request to server to claim a session with session_id and session_key.
+int WebSocketConnection::outgoing_claimSession() {
+    QJsonObject obj;
+    obj.insert("chef_id", m_session->chefID());
+    obj.insert("session_id", m_session->sessionID());
+    obj.insert("session_key", m_session->sessionKey());
+    auto outMsg = sendRequestMessage("claim_session", obj);
     return outMsg->value(MSG::Meta).toObject().value(MSG::ID).toInt();
 }

@@ -1,71 +1,25 @@
 #include "jsondb.h"
 
 JsonDB::JsonDB(QObject *parent) : QObject(parent) {
-
+    QDir configDir(CONFIG_DIR);
+    if (!configDir.exists()) configDir.mkpath(".");
+    QDir dataDir(DATA_DIR);
+    if (!dataDir.exists()) dataDir.mkpath(".");
+    qInfo() << "CONFIG_DIR" << CONFIG_DIR;
+    qInfo() << "DATA_CIR" << DATA_DIR;
 }
 
-bool JsonDB::setSession(const QString &name) {
-    m_session = name;
-    if (QDir(CONFIG_DIR).mkpath(m_session) == false)
-        return false;
-    if (QDir(DATA_DIR).mkpath(m_session) == false)
-        return false;
-    return true;
-}
-
-bool JsonDB::saveGlobalConfig(const QJsonObject &obj) {
+bool JsonDB::saveConfig(const QString &fName, const QJsonObject &obj) {
     QDir dir(CONFIG_DIR);
-    QFile file(dir.absoluteFilePath("config"));
-    if (!file.open(QIODevice::WriteOnly)) {
-        qDebug() << "[JsonDB::saveGlobalConfig] Error:"
-                 << "Unable to open file.";
-        return false;
-    }
 
-    auto data = m_enc.encrypt(QJsonDocument(obj).toBinaryData());
-    if (file.write(data) == -1) {
-        qDebug() << "[JsonDB::saveGlobalConfig] Error:"
-                 << "Unable to write to file.";
-        return false;
-    }
-
-    qDebug() << "[JsonDB::saveGlobalConfig] Saved:" << file.fileName();
-    return true;
-}
-
-bool JsonDB::getGlobalConfig(QJsonObject* obj) {
-    QDir dir(CONFIG_DIR);
-    QFile file(dir.absoluteFilePath("config"));
-    if (!file.open(QIODevice::ReadOnly)) {
-        qDebug() << "[JsonDB::getConfig] Error:"
-                 << "Unable to open file.";
-        return false;
-    }
-
-    auto data = m_enc.decrypt(file.readAll());
-    *obj = QJsonDocument::fromBinaryData(data).object();
-
-    qDebug() << "[JsonDB::getConfig] Got:" << file.fileName();
-    return true;
-}
-
-bool JsonDB::saveConfig(const QJsonObject &obj) {
-    QDir dir(CONFIG_DIR);
-    if (dir.cd(m_session) == false) {
-        qDebug() << "[JsonDB::saveConfig] Error:"
-                 << "Unable to open session directory.";
-        return false;
-    }
-
-    QFile file(dir.absoluteFilePath("config"));
+    QFile file(dir.absoluteFilePath(fName));
     if (!file.open(QIODevice::WriteOnly)) {
         qDebug() << "[JsonDB::saveConfig] Error:"
                  << "Unable to open file.";
         return false;
     }
 
-    auto data = m_enc.encrypt(QJsonDocument(obj).toBinaryData());
-    if (file.write(data) == -1) {
+    if (file.write(QJsonDocument(obj).toBinaryData()) == -1) {
         qDebug() << "[JsonDB::saveConfig] Error:"
                  << "Unable to write to file.";
         return false;
@@ -75,23 +29,17 @@ bool JsonDB::saveConfig(const QJsonObject &obj) {
     return true;
 }
 
-bool JsonDB::getConfig(QJsonObject *obj) {
+bool JsonDB::getConfig(const QString &fName, QJsonObject *obj) {
     QDir dir(CONFIG_DIR);
-    if (dir.cd(m_session) == false) {
-        qDebug() << "[JsonDB::getConfig] Error:"
-                 << "Unable to open session directory.";
-        return false;
-    }
 
-    QFile file(dir.absoluteFilePath("config"));
+    QFile file(dir.absoluteFilePath(fName));
     if (!file.open(QIODevice::ReadOnly)) {
         qDebug() << "[JsonDB::getConfig] Error:"
                  << "Unable to open file.";
         return false;
     }
 
-    auto data = m_enc.decrypt(file.readAll());
-    *obj = QJsonDocument::fromBinaryData(data).object();
+    *obj = QJsonDocument::fromBinaryData(file.readAll()).object();
 
     qDebug() << "[JsonDB::getConfig] Got:" << file.fileName();
     return true;
@@ -99,13 +47,6 @@ bool JsonDB::getConfig(QJsonObject *obj) {
 
 bool JsonDB::saveFile(const QString &subDir, const QString &fName, const QJsonObject &obj) {
     QDir dir(DATA_DIR);
-
-    // Open session dir.
-    if (dir.cd(m_session) == false) {
-        qDebug() << "[JsonDB::saveFile] Error:"
-                 << "Unable to open session dir.";
-        return false;
-    }
 
     // Ensure subDir exists.
     if (dir.mkpath(subDir) == false) {
@@ -130,8 +71,7 @@ bool JsonDB::saveFile(const QString &subDir, const QString &fName, const QJsonOb
     }
 
     // Write to file.
-    auto data = m_enc.encrypt(QJsonDocument(obj).toBinaryData());
-    if (file.write(data) == -1) {
+    if (file.write(QJsonDocument(obj).toBinaryData()) == -1) {
         qDebug() << "[JsonDB::saveFile] Error:"
                  << "Unable to write to file.";
         return false;
@@ -143,13 +83,6 @@ bool JsonDB::saveFile(const QString &subDir, const QString &fName, const QJsonOb
 
 bool JsonDB::getFile(const QString &subDir, const QString &fName, QJsonObject *obj) {
     QDir dir(DATA_DIR);
-
-    // Open session dir.
-    if (dir.cd(m_session) == false) {
-        qDebug() << "[JsonDB::getFile] Error:"
-                 << "Unable to open session dir.";
-        return false;
-    }
 
     // Ensure subDir exists.
     if (dir.mkpath(subDir) == false) {
@@ -174,8 +107,7 @@ bool JsonDB::getFile(const QString &subDir, const QString &fName, QJsonObject *o
     }
 
     // Read file.
-    auto data = m_enc.decrypt(file.readAll());
-    *obj = QJsonDocument::fromBinaryData(data).object();
+    *obj = QJsonDocument::fromBinaryData(file.readAll()).object();
 
     qDebug() << "[JsonDB::getFile] Got:" << file.fileName();
     return true;
@@ -183,8 +115,6 @@ bool JsonDB::getFile(const QString &subDir, const QString &fName, QJsonObject *o
 
 qint64 JsonDB::getCount(const QString &subDir) {
     QDir dir(DATA_DIR);
-    if (dir.cd(m_session) == false)
-        return -1;
     if (dir.cd(subDir) == false)
         return -1;
 
@@ -193,8 +123,6 @@ qint64 JsonDB::getCount(const QString &subDir) {
 
 QStringList JsonDB::getNameList(const QString &subDir) {
     QDir dir(DATA_DIR);
-    if (dir.cd(m_session) == false)
-        return QStringList();
     if (dir.cd(subDir) == false)
         return QStringList();
 

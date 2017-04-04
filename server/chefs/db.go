@@ -4,6 +4,7 @@ import (
 	"sync"
 
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"golang.org/x/crypto/bcrypt"
 	"gopkg.in/mgo.v2"
@@ -47,6 +48,18 @@ func (c *ChefsDB) AddChef(email, pwd string) error {
 	c.Lock()
 	defer c.Unlock()
 	email = strings.TrimSpace(email)
+
+	// See if it's the first user. If so, make admin.
+	// Else, check if this email is allowed.
+	admin := false
+	if n, _ := c.chefs.Count(); n == 0 {
+		admin = true
+	} else {
+		e := c.session.DB(DBAuth).C(CTAllowed).Find(bson.M{"email": email})
+		if e != nil {
+			return ErrPermissionDenied
+		}
+	}
 
 	// Check if chef already exists with specified email.
 	temp := Chef{}
@@ -104,6 +117,7 @@ func (c *ChefsDB) AddChef(email, pwd string) error {
 		PwdSalt:  pwdSalt,
 		PwdHash:  string(pwdHash),
 		Verified: false,
+		Admin:    admin,
 		Created:  time.Now(),
 	})
 	if e != nil {
@@ -278,7 +292,6 @@ func (c *ChefsDB) NewSession(email, pwd string) (
 		ChefID:     chef.ID.Hex(),
 		ChefName:   "",
 		ChefEmail:  chef.Email,
-		Teams:      chef.Teams,
 	}
 
 	// Add session to chef and update chef in db.
@@ -291,4 +304,84 @@ func (c *ChefsDB) NewSession(email, pwd string) (
 	}
 
 	return &sessionInfoObj, nil
+}
+
+// DeleteSession Removes a session.
+func (c *ChefsDB) DeleteSession(info *SessionInfo) error {
+	c.Lock()
+	defer c.Unlock()
+
+	if bson.IsObjectIdHex(info.SessionID) == false {
+		return &ErrInternal{errors.New("invalid session id - not hex")}
+	}
+	if bson.IsObjectIdHex(info.ChefID) == false {
+		return &ErrInternal{errors.New("invalid chef id - not hex")}
+	}
+
+	// Prepare query.
+	q := bson.M{
+		"$pull": bson.M{
+			"sessions": bson.M{
+				"_id": bson.ObjectIdHex(info.SessionID)}}}
+
+	// Delete session.
+	if e := c.chefs.UpdateId(bson.ObjectIdHex(info.ChefID), q); e != nil {
+		return &ErrInternal{e}
+	}
+
+	return nil
+}
+
+// ClaimSession retrieves a session if authorized.
+func (c *ChefsDB) ClaimSession(chefID, sessionID, sessionKey string) (
+	sessionInfo *SessionInfo, e error) {
+
+	c.Lock()
+	c.Unlock()
+
+	// Check IDs and key.
+	if bson.IsObjectIdHex(chefID) == false ||
+		bson.IsObjectIdHex(sessionID) == false ||
+		sessionKey == "" {
+		e = ErrPermissionDenied
+		return
+	}
+
+	// Obtain session data from db.
+	session := Session{}
+	q := bson.M{
+		"sessions": bson.M{
+			"$elemMatch": bson.M{
+				"_id": bson.ObjectIdHex(sessionID)}}}
+	e = c.chefs.FindId(bson.ObjectIdHex(chefID)).Select(q).One(&session)
+	if e != nil {
+		e = ErrPermissionDenied
+		return
+	}
+
+	// Check session_key.
+	e = bcrypt.CompareHashAndPassword(
+		[]byte(session.KeyHash), []byte(sessionKey+session.KeySalt))
+	if e != nil {
+		e = ErrPermissionDenied
+		return
+	}
+
+	// Obtain chef information.
+	chef := Chef{}
+	e = c.chefs.FindId(bson.ObjectIdHex(chefID)).One(&chef)
+	if e != nil {
+		e = &ErrInternal{e}
+		return
+	}
+
+	// Send session info.
+	sessionInfo = &SessionInfo{
+		SessionID:  session.ID.Hex(),
+		SessionKey: sessionKey, // TODO: Send a newly generated sessionKey.
+		ChefID:     session.ChefID,
+		ChefName:   "",
+		ChefEmail:  chef.Email,
+	}
+	return
 }

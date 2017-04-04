@@ -44,7 +44,50 @@ object containing email and password
 ```
 
 **Response (Server to Client)**<br>
-object container whether login successful and account info
+object containing session info if successful, or a string message if not
+```json
+{
+    "session_id": "",
+    "session_key": "",
+    "chef_id": "",
+    "chef_name": "",
+    "chef_email": "",
+}
+```
+```json
+"server error"
+```
+
+# Logout
+`"cmd": "logout"`
+
+**Request (Client to Server)**<br>
+empty string
+```json
+""
+```
+
+**Reply (Server to Client)**<br>
+string message
+```json
+"success"
+```
+
+# Claim Session
+`"cmd": "claim_session"`
+
+**Request (Client to Server)**<br>
+object with session_id and session_key
+```json
+{
+    "chef_id": "some_id",
+    "session_id": "some_other_id",
+    "session_key": "some_key"
+}
+```
+
+**Response (Server to Client)**<br>
+object defining user info and various updated if accepted
 ```json
 {
     "okay": true,
@@ -54,7 +97,6 @@ object container whether login successful and account info
         "chef_id": "",
         "chef_name": "",
         "chef_email": "",
-        "teams": ["team_id_1", "team_id_2"]
     }
 }
 ```

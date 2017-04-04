@@ -10,6 +10,7 @@ Item {
             ColumnLayout {
                 anchors.fill: parent
                 spacing: 40
+                Item {height: 10; width: 10}
                 Pane {
                     Layout.alignment: Layout.Center
                     Material.elevation: 10

@@ -38,13 +38,24 @@ ToolBar {
             Material.accent: Material.Orange
             text: "try again"
             visible: false
-            onClicked: WebSocket.open(wsUrl)
+            onClicked: WebSocket.open(Session.url)
         }
 
 
     }
 
     states: [
+        State {
+            name: "unknown"
+            PropertyChanges {
+                target: statusBar
+                height: 0
+            }
+            PropertyChanges {
+                target: messageText
+                visible: false
+            }
+        },
         State {
             name: "disconnected"
             when: WebSocket.connectionStatus === 0
@@ -55,8 +66,7 @@ ToolBar {
         },
         State {
             name: "connecting"
-            when: WebSocket.connectionStatus !== 0 &&
-                  WebSocket.connectionStatus !== 3
+            when: WebSocket.connectionStatus === 2
             PropertyChanges {
                 target: messageText
                 text: "attempting to establish a connection..."
@@ -93,5 +103,5 @@ ToolBar {
                         break
                     }
 
-    state: "connecting"
+    state: "unknown"
 }

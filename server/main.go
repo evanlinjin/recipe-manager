@@ -5,16 +5,17 @@ import (
 	"github.com/evanlinjin/recipe-manager/server/chefs"
 	"github.com/evanlinjin/recipe-manager/server/conn"
 	"github.com/evanlinjin/recipe-manager/server/handle"
+	"github.com/evanlinjin/recipe-manager/server/relay"
 	"github.com/gorilla/websocket"
 	"net/http"
-	"time"
 )
 
 // ObjectGroup groups a bunch of objects together to convenient passing between
 // functions. One object group is shared between all the chefs.
 type ObjectGroup struct {
-	Upgrader *websocket.Upgrader
-	ChefsDB  *chefs.ChefsDB // This is shared via reference across all chefs.
+	Upgrader    *websocket.Upgrader
+	ChefsDB     *chefs.ChefsDB // This is shared via reference across all chefs.
+	Distributor *relay.Distributor
 }
 
 // MakeObjectGroup makes a new instance of ObjectGroup.
@@ -33,6 +34,8 @@ func MakeObjectGroup() (g ObjectGroup, e error) {
 		BotEmailPwd: "",
 	})
 	g.ChefsDB = &cdb
+
+	g.Distributor = relay.NewDistributor()
 
 	return
 }
@@ -61,22 +64,23 @@ func MakeWebSocketEndpoint(g ObjectGroup) func(
 			return
 		}
 
-		// Initiate handshake to agree on encryption key for custom protocol.
-		if e := ws.Handshake(time.Second * 3); e != nil {
-			fmt.Println(e)
-			return
-		}
-
 		// Some debug messages.
 		fmt.Println("Connection established with", r.RemoteAddr)
 		defer fmt.Println("Connection with", r.RemoteAddr, "closed")
+
+		// Some personal session objects.
+		var personalSessionInfo *chefs.SessionInfo
+		var personalChannel = make(chan *conn.Message)
+
+		// Cleanup code.
+		defer g.Distributor.RemoveSession(personalSessionInfo) // handles nil.
 
 		// Handle outgoing messages.
 		go func() {
 			for {
 				select {
-				//case m := <-g.OutgoingMessages:
-				//	ws.SendMessage(m)
+				case m := <-personalChannel:
+					ws.SendMessage(m)
 
 				case <-ws.QuitChan:
 					return
@@ -122,12 +126,12 @@ func MakeWebSocketEndpoint(g ObjectGroup) func(
 						if e != nil {
 							msg := fmt.Sprintf("invalid data structure: %v", e)
 							ws.SendResponseMessage(m, msg)
-							break
+							return
 						}
 						if e := g.ChefsDB.AddChef(d.Email, d.Password); e != nil {
 							msg := fmt.Sprintf("invalid request: %v", e)
 							ws.SendResponseMessage(m, msg)
-							break
+							return
 						}
 						msg := fmt.Sprintf("please check your email to activate your account for %v", d.Email)
 						ws.SendResponseMessage(m, msg)
@@ -137,15 +141,51 @@ func MakeWebSocketEndpoint(g ObjectGroup) func(
 						if e != nil {
 							msg := "invalid data structure"
 							ws.SendResponseMessage(m, msg)
-							break
+							return
 						}
 						sessionInfo, e := g.ChefsDB.NewSession(d.Email, d.Password)
 						if e != nil {
-							msg := handle.HandleNewSessionError(e)
+							msg := handle.DealNewSessionError(e)
 							ws.SendResponseMessage(m, msg)
-							break
+							return
 						}
-						ws.SendResponseMessage(m, sessionInfo)
+						personalSessionInfo = sessionInfo
+						g.Distributor.AddSession(personalSessionInfo, personalChannel)
+						ws.SendResponseMessage(m, personalSessionInfo)
+
+					case "logout":
+						if personalSessionInfo == nil {
+							msg := "no session was active"
+							fmt.Printf("[%s] %s\n", r.RemoteAddr, msg)
+							ws.SendResponseMessage(m, msg)
+							return
+						}
+						e := g.ChefsDB.DeleteSession(personalSessionInfo)
+						if e != nil {
+							fmt.Printf("[%s] %s : %v\n", r.RemoteAddr, "logout", e)
+							ws.SendResponseMessage(m, e.Error())
+						} else {
+							ws.SendResponseMessage(m, "Logged out!")
+						}
+						return
+
+					case "claim_session":
+						d, e := handle.GetClaimSessionData(m.Data)
+						if e != nil {
+							msg := "invalid data structure"
+							ws.SendResponseMessage(m, msg)
+							return
+						}
+						sessionInfo, e := g.ChefsDB.ClaimSession(
+							d.ChefID, d.SessionID, d.SessionKey)
+						if e != nil {
+							msg := handle.DealClaimSessionError(e)
+							ws.SendResponseMessage(m, msg)
+							return
+						}
+						personalSessionInfo = sessionInfo
+						g.Distributor.AddSession(personalSessionInfo, personalChannel)
+						ws.SendResponseMessage(m, personalSessionInfo)
 					}
 
 				case conn.TypeResponse:

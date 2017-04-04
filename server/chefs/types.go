@@ -6,9 +6,10 @@ import (
 )
 
 const (
-	DBAuth  = "auth"
-	CTChefs = "chefs"
-	CTVerts = "verifications"
+	DBAuth    = "auth"
+	CTChefs   = "chefs"
+	CTVerts   = "verifications"
+	CTAllowed = "allowed"
 
 	ActivationEscURL  = `/action/`
 	NewAccountMessage = `
@@ -40,10 +41,10 @@ type Chef struct {
 	PwdSalt  string        `json:"pwd_salt"`
 	PwdHash  string        `json:"pwd_hash"`
 	Verified bool          `json:"vertified"`
+	Admin    bool          `json:"admin"`
 	Created  time.Time     `json:"created"`
 	Config   ChefConfig    `json:"config,omitempty"`
 	Sessions []Session     `json:"sessions"`
-	Teams    []string      `json:"teams,omitempty"`
 }
 
 // Verification represents how a verification method is recorded in database.
@@ -52,6 +53,12 @@ type Verification struct {
 	KeySalt string        `json:"key_salt"`
 	KeyHash string        `json:"key_hash"`
 	Created time.Time     `json:"created"`
+}
+
+// Allowed Email represents accounts that have the authority of being created
+// on the server.
+type AllowedEmail struct {
+	Email string `json:"email"`
 }
 
 // Session represents how a session is recorded in database.
@@ -67,12 +74,11 @@ type Session struct {
 
 // SessionInfo represents how a session is to be presented to the client.
 type SessionInfo struct {
-	SessionID  string   `json:"session_id"`
-	SessionKey string   `json:"session_key"`
-	ChefID     string   `json:"user_id"`
-	ChefName   string   `json:"chef_name"`
-	ChefEmail  string   `json:"chef_email"`
-	Teams      []string `json:"teams"`
+	SessionID  string `json:"session_id"`
+	SessionKey string `json:"session_key"`
+	ChefID     string `json:"user_id"`
+	ChefName   string `json:"chef_name"`
+	ChefEmail  string `json:"chef_email"`
 }
 
 // ChefConfig is yet to be implemented.

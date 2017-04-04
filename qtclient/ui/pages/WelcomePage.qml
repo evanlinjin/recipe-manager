@@ -12,48 +12,41 @@ import "../components/toolbars"
 Page {
     id: page
     property int maxContainerWidth: 380
+    property int maxWidth: 1024
+    signal changedHeader(string txt);
 
     header: DynamicToolBar {
-        maxWidth: page.width
         component: RowLayout {
-            ToolButton {
-                Layout.fillHeight: true
-                Image {
-                    id: name
-                    source: stack.depth > 1 ?
+            IconToolButton {
+                iconSource: stack.depth > 1 ?
                                 "qrc:/ui/icons/back.png" : "qrc:/ui/icons/info.png"
-                    anchors.centerIn: parent
-                }
+                ToolTip.text: stack.depth > 1 ?
+                                  "Back" : "About"
                 onClicked: stack.depth > 1 ?
                                stack.pop() : stack.push(aboutItem)
             }
+            HeaderLabel {
+                id: headerLabel
+                Component.onCompleted: page.onChangedHeader.connect(function(txt){
+                    text = txt
+                })
+            }
         }
         background: Item{}
-    }
-
-    background: Image {
-        id: bgImg
-        anchors.fill: parent
-        source: "qrc:/ui/backgrounds/veges.png"
-        fillMode: Image.PreserveAspectCrop
-        Rectangle {
-            anchors.fill: parent
-            opacity: 0.97
-            color: Material.background
-        }
     }
 
     StackView {
         id: stack
         anchors.fill: parent
         initialItem: loginItem
+        onCurrentItemChanged: changedHeader(currentItem.objectName)
+        Component.onCompleted: changedHeader(currentItem.objectName)
     }
-
-    footer: StatusBar{}
 
     Component {
         id: loginItem
         Item {
+            objectName: "Login"
             Pane {
                 id: pane
                 anchors.centerIn: parent
@@ -73,48 +66,51 @@ Page {
                         Layout.alignment: Layout.Center
                         Layout.maximumWidth: parent.width/2
                         Layout.maximumHeight: width
+                        Layout.preferredHeight: 100
+                        Layout.preferredWidth: 100
                         opacity: enabled ? 1 : 0.3
                         enabled: WebSocket.connectionStatus === 3
+                    }
+                    TextField {
+                        id: urlField
+                        placeholderText: "URL"
+                        Layout.fillWidth: true
+                        inputMethodHints: Qt.ImhNoAutoUppercase | Qt.ImhUrlCharactersOnly
+                        onAccepted: {emailField.forceActiveFocus(); Session.url = text}
+                        onFocusChanged: Session.url = text
+                        Component.onCompleted: text = Session.url
                     }
                     TextField {
                         id: emailField
                         placeholderText: "Email"
                         Layout.fillWidth: true
-                        enabled: WebSocket.connectionStatus === 3
                         inputMethodHints: Qt.ImhEmailCharactersOnly | Qt.ImhLowercaseOnly | Qt.ImhNoAutoUppercase
                         onAccepted: passwordField.forceActiveFocus()
                         onTextChanged: checkSubmitOkay()
+                        visible: WebSocket.connectionStatus === 3
                     }
                     TextField {
                         id: passwordField
                         placeholderText: "Password"
                         Layout.fillWidth: true
-                        enabled: WebSocket.connectionStatus === 3
                         echoMode: TextInput.Password
                         onAccepted: loginButton.enabled ?
                                         send() : {}
                         onTextChanged: checkSubmitOkay()
+                        visible: WebSocket.connectionStatus === 3
                     }
                     Button {
                         id: loginButton
                         Layout.fillWidth: true
                         text: "Login"
-                        enabled: WebSocket.connectionStatus === 3
-                        visible: false
+                        enabled: false
                         onClicked: send()
                     }
                     Button {
                         Layout.fillWidth: true
-                        text: "Join Us!"
+                        text: "Join a server"
                         flat: true
-                        enabled: WebSocket.connectionStatus === 3
                         onClicked: stack.push(createAccountItem)
-                    }
-                    Button {
-                        Layout.fillWidth: true
-                        text: "Advanced Settings"
-                        flat: true
-                        onClicked: stack.push(changeURLItem)
                     }
                     Item {
                         Layout.fillHeight: true
@@ -141,7 +137,7 @@ Page {
                 }
             ]
             function checkSubmitOkay() {
-                loginButton.visible =
+                loginButton.enabled =
                         /[^\s@]+@[^\s@]+\.[^\s@]+/.test(emailField.text) &&
                         passwordField.text.length >= 6
             }
@@ -153,59 +149,10 @@ Page {
         }
     }
 
-    Component{
-        id: changeURLItem
-        Item {
-            Pane {
-                anchors.centerIn: parent
-                anchors.verticalCenterOffset: -30
-                width: parent.width > maxContainerWidth ?
-                           maxContainerWidth : parent.width
-                Layout.margins: 20
-                background: Item{}
-                ColumnLayout {
-                    id: container
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    anchors.margins: 10
-                    Label {
-                        Layout.fillWidth: true
-                        text: "Change Connection URL:"
-                    }
-                    TextField {
-                        id: urlInput
-                        Layout.fillWidth: true
-                        text: wsUrl
-                        onAccepted: {
-                            WebSocket.close()
-                            WebSocket.open(urlInput.text)
-                            stack.pop()
-                        }
-                    }
-                    Button {
-                        id: changeButton
-                        Layout.fillWidth: true
-                        text: "Change"
-                        onClicked: {
-                            WebSocket.close()
-                            WebSocket.open(urlInput.text)
-                            stack.pop()
-                        }
-                    }
-                    Button {
-                        Layout.fillWidth: true
-                        flat: true
-                        text: "Cancel"
-                        onClicked: stack.pop()
-                    }
-                }
-            }
-        }
-    }
-
     Component {
         id: createAccountItem
         Item {
+            objectName: "Join a Server"
             Pane {
                 id: pane
                 anchors.centerIn: parent
@@ -219,22 +166,14 @@ Page {
                     anchors.left: parent.left
                     anchors.right: parent.right
                     anchors.margins: 10
-                    Image {
-                        id: icon
-                        source: "qrc:/ui/icons/recipemanager.png"
-                        Layout.alignment: Layout.Center
-                        Layout.maximumWidth: 100
-                        Layout.maximumHeight: width
-                        opacity: enabled ? 1 : 0.3
-                        enabled: WebSocket.connectionStatus === 3
-                    }
-                    Label {
+                    TextField {
+                        id: urlField
+                        placeholderText: "URL"
                         Layout.fillWidth: true
-                        text: "New Account"
-                        font.capitalization: Font.AllUppercase
-                        font.bold: Font.Bold
-                        horizontalAlignment: Text.AlignHCenter
-                        enabled: WebSocket.connectionStatus === 3
+                        inputMethodHints: Qt.ImhNoAutoUppercase | Qt.ImhUrlCharactersOnly
+                        onAccepted: emailField.forceActiveFocus()
+                        onFocusChanged: Session.url = text
+                        Component.onCompleted: text = Session.url
                     }
                     Label {
                         id: invalidEmail
@@ -248,7 +187,6 @@ Page {
                         id: emailField
                         placeholderText: "Email"
                         Layout.fillWidth: true
-                        enabled: WebSocket.connectionStatus === 3
                         inputMethodHints: Qt.ImhEmailCharactersOnly | Qt.ImhLowercaseOnly | Qt.ImhNoAutoUppercase
                         onAccepted: passwordField.forceActiveFocus()
                         onTextChanged: checkEmailValid()
@@ -265,7 +203,6 @@ Page {
                         id: passwordField
                         placeholderText: "Password"
                         Layout.fillWidth: true
-                        enabled: WebSocket.connectionStatus === 3
                         echoMode: TextInput.Password
                         onAccepted: confirmPasswordField.forceActiveFocus()
                         onTextChanged: checkPasswordLength()
@@ -282,7 +219,6 @@ Page {
                         id: confirmPasswordField
                         placeholderText: "Confirm Password"
                         Layout.fillWidth: true
-                        enabled: WebSocket.connectionStatus === 3
                         echoMode: TextInput.Password
                         onAccepted: send()
                         onTextChanged: checkMatchingPasswords()
@@ -291,6 +227,7 @@ Page {
                         id: submit
                         text: "Submit"
                         Layout.fillWidth: true
+                        visible: WebSocket.connectionStatus === 3
                         enabled: false
                         onClicked: send()
                     }
@@ -353,44 +290,37 @@ Page {
     }
 
     Dialog {
-            id: msgDialog
-            x: (parent.width - width)/2
-            y: (parent.height - height)/2
-            parent: ApplicationWindow.overlay
-            title: ("Message")
-            modal: true
-            Label {
-                id: msgDialogBody
-                anchors.centerIn: parent
-                elide: Text.ElideRight
-                wrapMode: Text.Wrap
-                width: parent.width
-                onTextChanged: console.log("text changed to: ", text)
-            }
-            standardButtons: Dialog.Ok
-            function setTextAndOpen(txt) {msgDialogBody.text = txt; open()}
+        id: msgDialog
+        x: (parent.width - width)/2
+        y: (parent.height - height)/2
+        parent: ApplicationWindow.overlay
+        title: ("Message")
+        modal: true
+        Label {
+            id: msgDialogBody
+            anchors.centerIn: parent
+            elide: Text.ElideRight
+            wrapMode: Text.Wrap
+            width: parent.width
+            onTextChanged: console.log("text changed to: ", text)
+        }
+        standardButtons: Dialog.Ok
+        function setTextAndOpen(txt) {msgDialogBody.text = txt; open()}
     }
 
-    Component{id: aboutItem; AboutItem{}}
+    Component{id: aboutItem; AboutItem{objectName: "About"}}
 
-    Label {
-        text: "image from pexels.com"
-        opacity: 0.5
-        anchors.bottom: parent.bottom
-        anchors.right: parent.right
-        anchors.margins: 10
-        horizontalAlignment: Text.AlignRight
-        font.pixelSize: 10
-    }
 
     property int outgoingReqId: -1
 
     function response(reqId, txtMsg) {
-        if (reqId !== outgoingReqId)
-            return;
+//        if (reqId !== outgoingReqId)
+//            return;
         while (stack.depth > 1)
             stack.pop()
         msgDialog.setTextAndOpen(txtMsg)
+        stack.clear()
+        stack.push(loginItem)
     }
 
     Component.onCompleted: WebSocket.onResponseTextMessage.connect(response)

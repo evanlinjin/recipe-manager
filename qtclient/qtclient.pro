@@ -1,12 +1,9 @@
 QT += qml quick quickcontrols2 websockets
 
 CONFIG += c++11
-android: QMAKE_CXXFLAGS += -DNDEBUG -g2 -O3
 
 SOURCES += main.cpp \
-    src/encryptor.cpp \
     src/messagemanager.cpp \
-    src/package.cpp \
     src/websocketconnection.cpp \
     src/session.cpp \
     src/jsondb.cpp
@@ -16,9 +13,6 @@ RESOURCES += qml.qrc \
     $$files(ui/icons/*.png) \
     $$files(ui/backgrounds/*.png) \
     $$files(ui/fonts/ubuntu/*.ttf)
-
-
-#linux: LIBS += -L/usr/lib/crypto++ -lcryptopp
 
 # Additional import path used to resolve QML modules in Qt Creator's code model
 QML_IMPORT_PATH =
@@ -43,9 +37,7 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
 HEADERS += \
-    src/encryptor.h \
     src/messagemanager.h \
-    src/package.h \
     src/websocketconnection.h \
     src/session.h \
     src/jsondb.h

@@ -9,8 +9,6 @@
 #include <QJsonArray>
 #include <QTimer>
 
-#include "package.h"
-#include "encryptor.h"
 #include "messagemanager.h"
 #include "session.h"
 
@@ -21,6 +19,7 @@ class WebSocketConnection : public QObject
     Q_PROPERTY(int connectionStatus READ connectionStatus NOTIFY connectionStatusChanged)
 public:
     explicit WebSocketConnection(QObject *parent = 0);
+    void setSession(Session* s) {m_session = s;}
 
     int connectionStatus() const {return m_connectionStatus;}
 
@@ -29,7 +28,7 @@ public:
 
 private:
     QWebSocket m_ws;
-    Encryptor* m_enc;
+    Session* m_session;
     MessageManager* m_msgs;
 
     QTimer *m_timer, *m_checker;
@@ -44,7 +43,7 @@ signals:
 
 private slots:
     void onStateChanged(QAbstractSocket::SocketState);
-    void onReceived(QString data);
+    void onReceived(QByteArray data);
 
     void onError(QAbstractSocket::SocketError e) {
         qErrnoWarning(e, "[WebSocketConnection] Error:");
@@ -58,7 +57,7 @@ private slots:
     }
 
 public slots:
-    void open(QString v) {m_ws.open(QUrl(v));}
+    void open(QString v) {m_ws.close(); m_ws.open(QUrl(v));}
     void close() {m_ws.close();}
 
     /**************************************************************************/
@@ -68,17 +67,18 @@ public slots:
 private:
     void send(QJsonObject &obj);
 
-    bool ps_handshake(const MSG::Message &msg);
     bool ps_new_chef(const MSG::Message &msg);
     bool ps_login(const MSG::Message &msg);
+    bool ps_claimSession(const MSG::Message &msg);
 
 public slots:
     int outgoing_newChef(QString email, QString password);
     int outgoing_login(QString email, QString password);
+    int outgoing_logout();
+    int outgoing_claimSession();
 
 signals:
     void responseTextMessage(int reqId, QString textMsg);
-    void changeSession(int reqId, SessionInfo info);
 };
 
 #endif // WEBSOCKETCONNECTION_H

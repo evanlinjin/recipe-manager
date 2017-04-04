@@ -1,13 +1,10 @@
 package conn
 
 import (
-	"bytes"
 	"encoding/json"
-	"fmt"
 	"github.com/gorilla/websocket"
 	"net/http"
 	"sync"
-	"time"
 )
 
 // WSManager manages a WebSocket connection. ReadMux and writeMux are used to
@@ -17,7 +14,6 @@ import (
 type WSManager struct {
 	conn *websocket.Conn
 	msgs MessageManager
-	enc  Encryptor
 
 	readMux  sync.RWMutex
 	writeMux sync.Mutex
@@ -29,7 +25,6 @@ type WSManager struct {
 // unable to upgrade the connection to WebSocket.
 func MakeWSManager(upgrader *websocket.Upgrader, w http.ResponseWriter, r *http.Request) (wsm WSManager, e error) {
 	wsm = WSManager{}
-	wsm.enc = MakeEncryptor()
 	wsm.msgs = MakeMessageManager()
 	wsm.conn, e = upgrader.Upgrade(w, r, nil)
 	if e != nil {
@@ -37,55 +32,6 @@ func MakeWSManager(upgrader *websocket.Upgrader, w http.ResponseWriter, r *http.
 	}
 	wsm.QuitChan = make(chan bool)
 	return
-}
-
-// Handshake initiates a handshake between server and client.
-// TODO: Currently not really a handshake, but an "ugh, use this key" situation.
-// This procedure needs to be improved.
-func (m *WSManager) Handshake(wait time.Duration) (e error) {
-	key, _ := m.enc.makeKey()
-	fmt.Println("Genereated key:", string(key))
-
-	var resChan = make(chan *Message)
-
-	go func() {
-		res, _ := m.GetMessage()
-		select {
-		case resChan <- res:
-		default:
-		}
-	}()
-
-	req, _ := m.SendRequestMessage("handshake", key)
-	timer := time.NewTimer(wait)
-	for {
-		select {
-		case <-timer.C:
-			e = fmt.Errorf("handshake failed, timeout")
-			goto DoneHandShake
-
-		case res := <-resChan:
-			timer.Stop()
-			switch {
-			case res == nil, res.Meta == nil, res.ReqMeta == nil:
-				break
-			case res.Type != TypeResponse, res.Command != "handshake":
-				break
-			case res.ReqMeta.Timestamp != req.Meta.Timestamp:
-				break
-			case res.ReqMeta.ID != req.Meta.ID:
-				break
-			default:
-				m.enc.setKey(key)
-				return nil
-			}
-			e = fmt.Errorf("handshake failed, invalid response")
-			goto DoneHandShake
-		}
-	}
-DoneHandShake:
-	m.Close(-1, e.Error())
-	return e
 }
 
 // Close closes the connected, and tell all associated listening/reading
@@ -115,20 +61,15 @@ func (m *WSManager) SendMessage(msg *Message) error {
 	if msg == nil {
 		return nil
 	}
-	// Make random Signature.
-	sig, _ := m.enc.makeKey()
 	// Put Message into Package with Signature.
-	pkg, _ := MakePackage(msg, sig)
-	// Encrypt Data and Signature.
-	encSig, _ := m.enc.Encrypt(sig)
-	encPkg, _ := m.enc.Encrypt(pkg)
-	// Join with dot.
-	out := append(encSig, byte('.'))
-	out = append(out, encPkg...)
+	pkg, e := json.Marshal(msg)
+	if e != nil {
+		return e
+	}
 
 	m.writeMux.Lock()
 	defer m.writeMux.Unlock()
-	return m.conn.WriteMessage(websocket.TextMessage, out)
+	return m.conn.WriteMessage(websocket.BinaryMessage, pkg)
 }
 
 // SendRequestMessage sends, specifically, a request message. This is a
@@ -150,7 +91,7 @@ func (m *WSManager) SendResponseMessage(reqMsg *Message, data interface{}) error
 
 func (m *WSManager) GetMessage() (msg *Message, e error) {
 	m.readMux.Lock()
-	typ, encPkg, e := m.conn.ReadMessage()
+	typ, pkg, e := m.conn.ReadMessage()
 	m.readMux.Unlock()
 	if e != nil {
 		return
@@ -158,7 +99,7 @@ func (m *WSManager) GetMessage() (msg *Message, e error) {
 
 	// Check type of ws msg.
 	switch typ {
-	case websocket.TextMessage:
+	case websocket.BinaryMessage:
 		break
 	case websocket.CloseMessage, -1:
 		e = &ErrCloseMessage{typ}
@@ -168,31 +109,12 @@ func (m *WSManager) GetMessage() (msg *Message, e error) {
 		return
 	}
 
-	// Split message into signature and data.
-	split := bytes.Split(encPkg, []byte("."))
-	if len(split) != 2 {
-		e = fmt.Errorf("expected %v parts, got %v from %v", 2, len(split), string(encPkg))
-		return
-	}
-	// Decrypt signature and package.
-	sig, e := m.enc.Decrypt(split[0])
-	if e != nil {
-		e = fmt.Errorf("while decrypting signature, %v", e)
-		return
-	}
-	pkg, e := m.enc.Decrypt(split[1])
-	if e != nil {
-		e = fmt.Errorf("while decrypting package, %v", e)
-		return
-	}
 	// Vertify data with signature.
 	msg = &Message{}
-	e = ReadPackage(pkg, sig, msg)
+	e = json.Unmarshal(pkg, msg)
 	if e != nil {
 		return
 	}
-	test, _ := json.Marshal(msg)
-	fmt.Println(string(test))
 	// Check msg.
 	e = m.msgs.CheckIncomingMessage(msg)
 	return
