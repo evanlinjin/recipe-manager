@@ -1,4 +1,6 @@
 # Recipe Manager
+
+[![Join the chat at https://gitter.im/recipe-manager/Lobby](https://badges.gitter.im/recipe-manager/Lobby.svg)](https://gitter.im/recipe-manager/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [recipemanager.io](https://recipemanager.io/)
 
 Recipe Manager is a cross-platform application for managing recipes in teams. It features real-time updates and a convergent UI design. **Most of these features have yet to be implemented.**
